@@ -1,0 +1,54 @@
+.room {
+  position: relative;
+  padding: 26vh var(--gutter) 34vh;
+}
+
+.panel {
+  position: relative;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: clamp(24px, 4vw, 56px);
+  background: rgba(5, 7, 12, 0.8);
+  border: 1px solid color-mix(in srgb, var(--neon) 30%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 60px -20px color-mix(in srgb, var(--neon) 55%, transparent),
+    inset 0 0 80px -40px color-mix(in srgb, var(--neon-2) 50%, transparent);
+}
+
+.wide {
+  max-width: 1360px;
+}
+
+@media (min-width: 900px) {
+  .panel {
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+}
+
+/* Неоновые уголки панели */
+.panel::before,
+.panel::after {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--neon);
+  filter: drop-shadow(0 0 6px var(--neon));
+  pointer-events: none;
+}
+
+.panel::before {
+  top: -2px;
+  left: -2px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.panel::after {
+  right: -2px;
+  bottom: -2px;
+  border-left: 0;
+  border-top: 0;
+}

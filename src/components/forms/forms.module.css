@@ -1,0 +1,161 @@
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.optional {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 16px; /* меньше 16px — iOS зумит поле при фокусе */
+  color: var(--text);
+  background: rgba(4, 5, 10, 0.75);
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+textarea.input {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.input::placeholder {
+  color: #6f7890;
+}
+
+.input:hover {
+  border-color: color-mix(in srgb, var(--neon) 50%, transparent);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--neon);
+  box-shadow: 0 0 0 1px var(--neon), 0 0 18px -4px var(--neon);
+}
+
+.input[aria-invalid="true"] {
+  border-color: #ff5c7a;
+}
+
+.error {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #ff8aa0;
+}
+
+.fieldset {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.fieldset .label {
+  display: block;
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  position: relative;
+  cursor: pointer;
+}
+
+.chip input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.chip span {
+  display: inline-block;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid var(--line-strong);
+  background: rgba(4, 5, 10, 0.6);
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+
+.chip:hover span {
+  border-color: color-mix(in srgb, var(--neon) 60%, transparent);
+}
+
+.chip input:checked + span {
+  color: #07080d;
+  background: var(--neon);
+  border-color: var(--neon);
+  box-shadow: 0 0 14px -2px var(--neon);
+}
+
+.chip input:focus-visible + span {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.consentWrap {
+  margin: 4px 0 18px;
+}
+
+.consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.consent input {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--neon);
+}
+
+.consent a {
+  color: var(--neon-2);
+}
+
+.success {
+  padding: 22px;
+  font-size: 17px;
+  line-height: 1.5;
+  border: 1px solid var(--neon);
+  background: color-mix(in srgb, var(--neon) 10%, rgba(8, 10, 18, 0.9));
+  box-shadow: 0 0 30px -12px var(--neon);
+}
+
+.fine {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}

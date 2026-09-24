@@ -1,0 +1,88 @@
+import { fromPrice, plans } from "@/config/site";
+import { Room } from "../Room/Room";
+import s from "./ForWhom.module.css";
+
+interface Tile {
+  title: string;
+  pain: string;
+  solution: string;
+  price: string;
+  link: { label: string; href: string };
+}
+
+export function ForWhom() {
+  const { landing, corporate, catalog, shop, service } = plans;
+
+  const tiles: Tile[] = [
+    {
+      title: "Малый бизнес и ИП",
+      pain: "Нужно быстро запуститься и начать получать заявки.",
+      solution: `Сделаем лендинг или сайт-визитку с продающими текстами и формой заявки. Запуск за ${landing.days} ${landing.daysWord}, без лишних трат.`,
+      price: fromPrice(landing.price),
+      link: { label: "Подробнее о лендингах", href: "#pricing" },
+    },
+    {
+      title: "Компании",
+      pain: "Сайт устарел, неудобен или сидит на старой CMS.",
+      solution:
+        "Сделаем редизайн, перенесём сайт на современную платформу без потери позиций в поиске, проведём аудит и исправим то, что мешает продажам.",
+      price: fromPrice(corporate.price),
+      link: { label: "Подробнее о корпоративных сайтах", href: "#pricing" },
+    },
+    {
+      title: "Торговля",
+      pain: "Нужно показать товары и продавать онлайн.",
+      solution:
+        "Сделаем сайт-каталог или интернет-магазин с удобными фильтрами, корзиной и SEO-оптимизацией карточек товаров.",
+      price: `Каталог ${fromPrice(catalog.price)} · Магазин ${fromPrice(shop.price)}`,
+      link: { label: "Подробнее о магазинах", href: "#pricing" },
+    },
+    {
+      title: "Стартапы и онлайн-сервисы",
+      pain: "Нужен сайт с нестандартной логикой и нишевыми функциями.",
+      solution:
+        "Разработаем многостраничный сайт под ваш продукт и добавим нужные фичи: личные кабинеты, калькуляторы, интеграции.",
+      price: fromPrice(service.price),
+      link: { label: "Обсудить проект", href: "#contact" },
+    },
+  ];
+
+  return (
+    <Room
+      id="for-whom"
+      room="forWhom"
+      index="02"
+      title="Подберём решение под ваш бизнес"
+      lead="Неважно, открываете вы первое дело или обновляете сайт крупной компании. Выберите свою ситуацию, и мы покажем, с чего начать."
+    >
+      <ul className={s.grid}>
+        {tiles.map((tile, i) => (
+          <li key={tile.title} className={s.tile} data-reveal>
+            <span className={s.num} aria-hidden="true">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <h3 className={s.title}>{tile.title}</h3>
+            <p className={s.pain}>
+              <em>{tile.pain}</em>
+            </p>
+            <p className={s.solution}>{tile.solution}</p>
+            <div className={s.footer}>
+              <p className={s.price}>{tile.price}</p>
+              <a href={tile.link.href} className={s.link}>
+                {tile.link.label}
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <p className="cta-line" data-reveal>
+        <span>Не нашли свою ситуацию? Опишите задачу, и мы предложим решение в течение часа.</span>
+        <a href="#contact" className="btn btn--outline">
+          Написать нам
+        </a>
+      </p>
+    </Room>
+  );
+}

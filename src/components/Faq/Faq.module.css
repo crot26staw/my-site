@@ -1,0 +1,97 @@
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 32px 0 30px;
+}
+
+.item {
+  background: rgba(8, 10, 18, 0.92);
+  border: 1px solid color-mix(in srgb, var(--neon) 24%, transparent);
+  transition: border-color 0.25s;
+}
+
+.item[open] {
+  border-color: color-mix(in srgb, var(--neon) 70%, transparent);
+  box-shadow: 0 0 28px -14px var(--neon);
+}
+
+.question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+}
+
+.question::-webkit-details-marker {
+  display: none;
+}
+
+.question:hover {
+  color: var(--neon);
+}
+
+.question:focus-visible {
+  outline: 2px solid var(--neon-2);
+  outline-offset: -2px;
+}
+
+/* Плюс, превращающийся в минус */
+.toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.toggle::before,
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--neon);
+  box-shadow: 0 0 6px var(--neon);
+  transition: transform 0.25s;
+}
+
+.toggle::after {
+  transform: rotate(90deg);
+}
+
+.item[open] .toggle::after {
+  transform: rotate(0deg);
+}
+
+.answer {
+  margin: 0;
+  padding: 0 20px 20px;
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.item[open] .answer {
+  animation: answer-in 0.3s ease;
+}
+
+@keyframes answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item[open] .answer {
+    animation: none;
+  }
+}

@@ -1,0 +1,174 @@
+.widget {
+  margin-top: 32px;
+  max-width: 760px;
+  padding: clamp(20px, 3vw, 32px);
+  background: rgba(8, 10, 18, 0.92);
+  border: 1px solid color-mix(in srgb, var(--neon) 40%, transparent);
+  box-shadow: 0 0 40px -18px var(--neon);
+}
+
+.progress {
+  margin-bottom: 24px;
+}
+
+.counter {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--neon-2);
+}
+
+.bar {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--neon), var(--neon-2));
+  box-shadow: 0 0 12px var(--neon);
+  transition: width 0.4s ease;
+}
+
+.step {
+  animation: step-in 0.35s ease;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.question {
+  margin: 0 0 18px;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 700;
+  line-height: 1.25;
+  outline: none;
+}
+
+.hint {
+  margin: -10px 0 16px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.price {
+  display: inline-block;
+  color: var(--neon);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--neon) 55%, transparent);
+}
+
+.options {
+  display: grid;
+  gap: 10px;
+}
+
+.option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  font-size: 16px;
+  line-height: 1.4;
+  border: 1px solid var(--line-strong);
+  background: rgba(4, 5, 10, 0.6);
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.option:hover {
+  border-color: color-mix(in srgb, var(--neon) 60%, transparent);
+}
+
+.option input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--line-strong);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.option input[type="radio"] + .box {
+  border-radius: 50%;
+}
+
+.option:has(input:checked) {
+  border-color: var(--neon);
+  background: color-mix(in srgb, var(--neon) 10%, rgba(4, 5, 10, 0.7));
+}
+
+.option input:checked + .box {
+  border-color: var(--neon);
+  background: radial-gradient(circle, var(--neon) 45%, transparent 50%);
+  box-shadow: 0 0 10px var(--neon);
+}
+
+.option input[type="checkbox"]:checked + .box {
+  background: var(--neon);
+}
+
+.option:has(input:focus-visible) {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.nav .btn,
+.nav button {
+  flex: 0 1 auto;
+}
+
+.nav button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: none;
+}
+
+@media (max-width: 559px) {
+  .nav button {
+    flex: 1 1 140px;
+  }
+}
+
+.lead {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.form {
+  margin-top: 8px;
+}

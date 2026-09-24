@@ -1,0 +1,130 @@
+/* Футер лежит поверх вестибюля: сверху прозрачный, чтобы была видна закрытая дверь */
+.footer {
+  position: relative;
+  z-index: 1;
+  padding: 45vh var(--gutter) calc(24px + env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent 0, rgba(4, 5, 10, 0.75) 38vh, rgba(4, 5, 10, 0.96) 55vh);
+}
+
+.inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding-top: 36px;
+  border-top: 1px solid rgba(255, 43, 214, 0.35);
+  box-shadow: 0 -1px 24px -12px rgba(255, 43, 214, 0.6);
+}
+
+.grid {
+  display: grid;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: 1.3fr 1fr 1.2fr 1.4fr;
+  }
+}
+
+.col {
+  min-width: 0;
+}
+
+.logo {
+  display: inline-block;
+  margin-bottom: 14px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--text);
+  text-decoration: none;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.55);
+}
+
+.about {
+  margin: 0;
+  max-width: 320px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.heading {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+}
+
+.list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  color: var(--text);
+}
+
+.list a {
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.list a:hover {
+  color: var(--neon-cyan);
+}
+
+.phone {
+  font-family: var(--font-mono);
+  font-size: 17px;
+}
+
+.messenger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.messenger svg {
+  color: var(--neon-cyan);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.bottom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.bottom a {
+  color: var(--muted);
+}
+
+.bottom a:hover {
+  color: var(--text);
+}
+
+/* Отступ снизу, чтобы плавающая кнопка не перекрывала нижнюю строку */
+@media (max-width: 767px) {
+  .bottom {
+    padding-bottom: 64px;
+  }
+}

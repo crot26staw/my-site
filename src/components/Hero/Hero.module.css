@@ -1,0 +1,185 @@
+/* Длина участка = длина анимации «подход → дверь → вход → поворот». */
+.track {
+  position: relative;
+  height: 420vh;
+}
+
+.stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: flex;
+  align-items: center;
+  padding: var(--header-h) var(--gutter) 0;
+}
+
+/* Затемнение слева, чтобы текст читался поверх сцены */
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(4, 5, 10, 0.9) 0%, rgba(4, 5, 10, 0.55) 38%, rgba(4, 5, 10, 0) 62%);
+  opacity: calc(1 - var(--p, 0) * 4);
+  pointer-events: none;
+}
+
+.content {
+  position: relative;
+  width: 100%;
+  max-width: var(--container);
+  margin: 0 auto;
+  opacity: calc(1 - var(--p, 0) * 5);
+  transform: translateY(calc(var(--p, 0) * -180px));
+  will-change: opacity, transform;
+}
+
+.content > * {
+  max-width: 660px;
+}
+
+[data-faded] .content,
+[data-faded] .hint {
+  visibility: hidden;
+}
+
+.title {
+  margin: 0 0 20px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 3.5vw, 50px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.accent {
+  color: var(--neon);
+  text-shadow: 0 0 18px rgba(255, 43, 214, 0.55);
+}
+
+.lead {
+  margin: 0 0 26px;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 1.55;
+  color: var(--muted);
+  max-width: 560px !important;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 30px;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  position: relative;
+  padding: 10px 14px 10px 26px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--text);
+  background: rgba(0, 229, 255, 0.06);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+}
+
+.badge::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  background: var(--neon-2);
+  box-shadow: 0 0 8px var(--neon-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: calc(1 - var(--p, 0) * 14);
+}
+
+.hint svg {
+  color: var(--neon-2);
+  animation: hint-bob 1.8s ease-in-out infinite;
+}
+
+@keyframes hint-bob {
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+/* Узкие и невысокие экраны: текст идёт в обычном потоке и уходит вверх при скролле,
+   чтобы длинный первый экран не обрезался. Дверь видна за ним. */
+@media (max-width: 899px), (max-height: 679px) {
+  .stage {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    align-items: flex-end;
+    padding-top: calc(var(--header-h) + 36vh);
+    padding-bottom: 72px;
+  }
+
+  .stage::before {
+    background: linear-gradient(180deg, rgba(4, 5, 10, 0) 0%, rgba(4, 5, 10, 0.75) 38%, rgba(4, 5, 10, 0.94) 60%);
+  }
+
+  .content {
+    transform: none;
+  }
+
+  .badges {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .actions > a {
+    flex: 1 1 220px;
+  }
+
+  .hint {
+    bottom: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    height: 200vh;
+  }
+
+  .hint svg {
+    animation: none;
+  }
+}
