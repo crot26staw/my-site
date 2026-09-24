@@ -5,23 +5,24 @@
  * yaw — куда смотрит камера: 0 — в −z, π/2 — в −x, −π/2 — в +x, ±π — в +z.
  * Увеличение yaw — поворот налево, уменьшение — направо.
  *
- * Прогулка повторяет цикл из четырёх комнат (PATTERN):
+ * Прогулка повторяет цикл из четырёх комнат (DESKTOP.pattern):
  *   left  — дверь в левой стене: читаем блок ближе ко входу и сразу плавно заворачиваем к двери;
  *   up    — дверь прямо, к ней лестница вверх, следующая комната выше;
  *   right — то же с дверью справа;
  *   down  — пандус в подвал от середины комнаты, внизу дверь в следующую комнату.
  * Контент комнаты всегда на стене впереди при входе. Комнаты расставляются
  * по маршруту: вход в каждую — по центру её стены.
+ *
+ * На мобильных (MOBILE_QUERY) — упрощённый план: плоский коридор из комнат поменьше,
+ * все двери прямо (forward), без поворотов, лестниц и пандусов. Переходы короче.
  */
 import type { RoomId } from "@/config/rooms";
 
 const PI = Math.PI;
 const HALF = PI / 2;
 export const WALL = 0.4;
-export const HALF_ROOM = 6;
-/** Финальная комната («улица» с футером) меньше остальных. */
-export const OUTSIDE_HALF = 4.5;
-export const ROOM_HEIGHT = 5.6;
+/** Полуразмер комнаты на десктопе; от него отсчитаны боковые двери, лестница и пандус. */
+const HALF_ROOM = 6;
 /** Перепад между этажами (лестница). */
 export const RISE = 1;
 /** Боковая дверь: насколько дальше центра комнаты она стоит. */
@@ -48,8 +49,22 @@ export const RAMP = {
 /** Насколько камера подплывает к стене с контентом, пока читаем блок. */
 export const READ_DRIFT = 0.6;
 
-export type ExitKind = "left" | "up" | "right" | "down";
-const PATTERN: ExitKind[] = ["left", "up", "right", "down"];
+export type ExitKind = "left" | "up" | "right" | "down" | "forward";
+
+/** Та же граница, что и в CSS (.passage в globals.css, .track в Hero.module.css). */
+export const MOBILE_QUERY = "(max-width: 767px), (pointer: coarse)";
+
+interface Profile {
+  pattern: ExitKind[];
+  /** Полуразмер комнаты. */
+  half: number;
+  /** Финальная комната («улица» с футером) меньше остальных. */
+  outsideHalf: number;
+  height: number;
+}
+
+const DESKTOP: Profile = { pattern: ["left", "up", "right", "down"], half: HALF_ROOM, outsideHalf: 4.5, height: 5.6 };
+const MOBILE: Profile = { pattern: ["forward"], half: 4, outsideHalf: 3.5, height: 4.8 };
 
 export interface Bounds {
   minX: number;
@@ -96,7 +111,7 @@ export interface RouteDoor {
 /** Направление взгляда по yaw. */
 export const dirOf = (yaw: number) => ({ x: -Math.sin(yaw), z: -Math.cos(yaw) });
 
-const boundsAround = (c: { x: number; z: number }, half = HALF_ROOM): Bounds => ({
+const boundsAround = (c: { x: number; z: number }, half: number): Bounds => ({
   minX: c.x - half,
   maxX: c.x + half,
   minZ: c.z - half,
@@ -131,7 +146,18 @@ const SIGNS: Record<string, string> = {
   contact: "КОНТАКТЫ",
 };
 
-function buildPlan() {
+export interface Plan {
+  rooms: RouteRoom[];
+  doors: RouteDoor[];
+  roomById: Record<string, RouteRoom>;
+  /** Дверь, ведущая из комнаты дальше по маршруту. */
+  doorAfter: (roomId: string) => RouteDoor;
+  half: number;
+  outsideHalf: number;
+}
+
+export function buildPlan(mobile: boolean): Plan {
+  const { pattern, half, outsideHalf, height } = mobile ? MOBILE : DESKTOP;
   const rooms: RouteRoom[] = [
     {
       id: "vestibule",
@@ -147,8 +173,8 @@ function buildPlan() {
   const doors: RouteDoor[] = [{ id: "hero", from: "vestibule", to: "why", yaw: 0, x: 0, z: -WALL / 2, y: 0, label: "01 // ВХОД" }];
 
   // Текущая комната: центр, направление движения при входе, уровень пола.
-  const reach = HALF_ROOM + WALL / 2;
-  let center = { x: 0, z: -WALL - HALF_ROOM };
+  const reach = half + WALL / 2;
+  let center = { x: 0, z: -WALL - half };
   let yaw = 0;
   let level = 0;
 
@@ -156,13 +182,13 @@ function buildPlan() {
   const ids = [...SEQUENCE, "outside"];
   ids.forEach((id, i) => {
     const isOutside = id === "outside";
-    const exit = isOutside ? undefined : PATTERN[i % PATTERN.length];
+    const exit = isOutside ? undefined : pattern[i % pattern.length];
     const d = dirOf(yaw);
     rooms.push({
       id,
       colors: isOutside ? "hero" : (id as RoomId),
-      bounds: boundsAround(center, isOutside ? OUTSIDE_HALF : HALF_ROOM),
-      height: ROOM_HEIGHT,
+      bounds: boundsAround(center, isOutside ? outsideHalf : half),
+      height,
       level,
       center,
       stand:
@@ -194,7 +220,7 @@ function buildPlan() {
       };
     } else {
       doorPos = { x: center.x + d.x * reach, z: center.z + d.z * reach };
-      doorY = nextLevel = level + (exit === "up" ? RISE : -RISE);
+      if (exit !== "forward") doorY = nextLevel = level + (exit === "up" ? RISE : -RISE);
     }
     doors.push({
       id: toOutside ? "exit" : `door${i + 2}`,
@@ -208,20 +234,18 @@ function buildPlan() {
     });
 
     const nd = dirOf(doorYaw);
-    const nextReach = toOutside ? OUTSIDE_HALF + WALL / 2 : reach;
+    const nextReach = toOutside ? outsideHalf + WALL / 2 : reach;
     center = { x: doorPos.x + nd.x * nextReach, z: doorPos.z + nd.z * nextReach };
     yaw = doorYaw;
     level = nextLevel;
   });
 
-  return { rooms, doors };
+  return {
+    rooms,
+    doors,
+    roomById: Object.fromEntries(rooms.map((r) => [r.id, r])),
+    doorAfter: (roomId) => doors.find((d) => d.from === roomId)!,
+    half,
+    outsideHalf,
+  };
 }
-
-const plan = buildPlan();
-export const ROOMS = plan.rooms;
-export const DOORS = plan.doors;
-
-export const roomById = Object.fromEntries(ROOMS.map((r) => [r.id, r])) as Record<string, RouteRoom>;
-
-/** Дверь, ведущая из комнаты дальше по маршруту. */
-export const doorAfter = (roomId: string) => DOORS.find((d) => d.from === roomId)!;

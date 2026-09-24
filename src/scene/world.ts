@@ -7,8 +7,8 @@ import { rooms } from "@/config/rooms";
 import { createDoor, type Door } from "./door";
 import { box, materials, neon, neonText, strip } from "./kit";
 import { buildRoom, type RoomSpec, type WallSide } from "./room";
-import { evaluate, type Layout } from "./path";
-import { DOORS, RAMP, RISE, ROOMS, STAIRS, WALL, dirOf, roomById, type Bounds, type RouteRoom } from "./route";
+import { createRoute, type Layout } from "./path";
+import { MOBILE_QUERY, RAMP, RISE, STAIRS, WALL, buildPlan, dirOf, type Bounds, type RouteDoor, type RouteRoom } from "./route";
 
 const DOOR = { width: 3, height: 3.4 };
 
@@ -105,8 +105,7 @@ function buildRamp(face: { x: number; z: number }, inward: { x: number; z: numbe
 }
 
 /** Прямоугольник, который пандус в подвал вырезает в полу. */
-function stairsFootprint(roomId: string) {
-  const door = DOORS.find((d) => d.from === roomId)!;
+function stairsFootprint(door: RouteDoor) {
   const d = dirOf(door.yaw);
   const face = { x: door.x - d.x * (WALL / 2), z: door.z - d.z * (WALL / 2) };
   const far = { x: face.x - d.x * RAMP.length, z: face.z - d.z * RAMP.length };
@@ -161,8 +160,11 @@ export class World {
   private layout: Layout = { heroOffsetX: 0, heroDistance: 8, heroShiftY: 0 };
   private size = { w: 1, h: 1 };
   private pointer = { x: 0, y: 0, sx: 0, sy: 0 };
-  private isMobile = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
+  private isMobile = window.matchMedia(MOBILE_QUERY).matches;
   private reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  /** План выбирается один раз при загрузке: на мобильных — прямой коридор. */
+  private plan = buildPlan(this.isMobile);
+  private route = createRoute(this.plan);
 
   constructor(private canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: "high-performance" });
@@ -191,14 +193,15 @@ export class World {
 
   private buildWorld() {
     const opening = { width: DOOR.width, height: DOOR.height };
+    const { rooms: planRooms, doors: planDoors, roomById, doorAfter } = this.plan;
 
-    for (const r of ROOMS) {
+    for (const r of planRooms) {
       const colors = rooms[r.colors];
       const group = new THREE.Group();
 
       // Проёмы — там, где в стенах этой комнаты стоят двери.
       const openings: RoomSpec["openings"] = {};
-      for (const d of DOORS) {
+      for (const d of planDoors) {
         if (d.from !== r.id && d.to !== r.id) continue;
         const { side, along } = wallAt(r.bounds, d.x, d.z);
         const bottom = d.y - r.level;
@@ -219,7 +222,7 @@ export class World {
           barsAlong: r.barsAlong,
           openings,
           plainWalls: freeContentWall ? [freeContentWall.side] : [],
-          floorHole: r.stairs === "down" ? stairsFootprint(r.id) : undefined,
+          floorHole: r.stairs === "down" ? stairsFootprint(doorAfter(r.id)) : undefined,
         }),
       );
 
@@ -238,7 +241,7 @@ export class World {
 
       // У дальней стены: лестница вверх или пандус в подвал.
       if (r.stairs) {
-        const door = DOORS.find((d) => d.from === r.id)!;
+        const door = doorAfter(r.id);
         const d = dirOf(door.yaw);
         const face = { x: door.x - d.x * (WALL / 2), z: door.z - d.z * (WALL / 2) };
         const inward = { x: -d.x, z: -d.z };
@@ -255,7 +258,7 @@ export class World {
     this.sign("ВЕБ-СТУДИЯ", rooms.hero.neon2, [vestibule.maxX - 0.14, 2.9, 4.2], -Math.PI / 2, this.roomGroups.get("vestibule")!);
 
     // Двери: цвет двери = цвет комнаты, в которую она ведёт.
-    for (const d of DOORS) {
+    for (const d of planDoors) {
       const colors = rooms[d.id === "hero" ? "hero" : roomById[d.to].colors];
       const door = createDoor({ ...DOOR, depth: WALL, color: colors.neon, color2: colors.neon2, label: d.label, labelBack: d.labelBack });
       door.group.position.set(d.x, d.y, d.z);
@@ -333,7 +336,7 @@ export class World {
   };
 
   frame(time: number, tracks: Record<string, number>) {
-    const state = evaluate(tracks, this.layout, this.reduced);
+    const state = this.route(tracks, this.layout, this.reduced);
 
     this.pointer.sx += (this.pointer.x - this.pointer.sx) * 0.05;
     this.pointer.sy += (this.pointer.y - this.pointer.sy) * 0.05;

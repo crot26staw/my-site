@@ -118,6 +118,17 @@ a {
   height: 380vh;
 }
 
+/* Мобильные (MOBILE_QUERY в scene/route.ts): прямой коридор из небольших комнат — переходы короче. */
+@media (max-width: 767px), (pointer: coarse) {
+  .passage {
+    height: 130vh;
+  }
+
+  .passage--long {
+    height: 170vh;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .passage,
   .passage--long {

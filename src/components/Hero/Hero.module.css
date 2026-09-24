@@ -6,6 +6,13 @@
   margin-bottom: -35vh;
 }
 
+/* Мобильные: первая комната ближе (см. MOBILE_QUERY в scene/route.ts) */
+@media (max-width: 767px), (pointer: coarse) {
+  .track {
+    height: 320vh;
+  }
+}
+
 .stage {
   position: sticky;
   top: 0;

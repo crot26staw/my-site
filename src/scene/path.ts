@@ -2,19 +2,7 @@
  * Маршрут камеры (план этажа — в route.ts). Поза — чистая функция прогресса участков скролла,
  * поэтому движение полностью обратимо и якоря попадают в нужное состояние.
  */
-import {
-  HALF_ROOM,
-  OUTSIDE_HALF,
-  RAMP,
-  READ_DRIFT,
-  RISE,
-  SEQUENCE,
-  STAIRS,
-  dirOf,
-  doorAfter,
-  roomById,
-  type RouteDoor,
-} from "./route";
+import { RAMP, READ_DRIFT, RISE, SEQUENCE, STAIRS, buildPlan, dirOf, type Plan, type RouteDoor } from "./route";
 
 export interface Pose {
   x: number;
@@ -187,21 +175,21 @@ const EYE = 1.65;
 const eye = (p: { x: number; z: number }, level: number) => ({ x: p.x, y: level + EYE, z: p.z });
 
 /** Камера смотрит на контент комнаты / дочитала блок (чуть подплыла к стене). */
-function facing(roomId: string): Pose {
-  const r = roomById[roomId];
+function facing(plan: Plan, roomId: string): Pose {
+  const r = plan.roomById[roomId];
   const e = eye(r.stand, r.level);
   return pose(e.x, e.y, e.z, r.contentYaw!);
 }
-function reading(roomId: string): Pose {
-  const r = roomById[roomId];
+function reading(plan: Plan, roomId: string): Pose {
+  const r = plan.roomById[roomId];
   const d = dirOf(r.contentYaw!);
   const e = eye({ x: r.stand.x + d.x * READ_DRIFT, z: r.stand.z + d.z * READ_DRIFT }, r.level);
   return pose(e.x, e.y, e.z, r.contentYaw!, 0.01);
 }
 
 /** Точка на оси комнаты на расстоянии dist от центра по направлению yaw, на высоте глаз над level. */
-function along(roomId: string, yaw: number, dist: number, level: number) {
-  const r = roomById[roomId];
+function along(plan: Plan, roomId: string, yaw: number, dist: number, level: number) {
+  const r = plan.roomById[roomId];
   const d = dirOf(yaw);
   return eye({ x: r.center.x + d.x * dist, z: r.center.z + d.z * dist }, level);
 }
@@ -232,11 +220,11 @@ function openOnApproach(c: Curve, door: RouteDoor): [number, number] {
 }
 
 /** Путь от «дочитали блок» до «стоим перед контентом следующей комнаты». */
-function passage(door: RouteDoor): Passage {
-  const from = roomById[door.from];
-  const to = roomById[door.to];
+function passage(plan: Plan, door: RouteDoor): Passage {
+  const from = plan.roomById[door.from];
+  const to = plan.roomById[door.to];
   const yaw = from.contentYaw!;
-  const c = new Curve(reading(door.from));
+  const c = new Curve(reading(plan, door.from));
 
   switch (from.exit) {
     case "left":
@@ -245,22 +233,26 @@ function passage(door: RouteDoor): Passage {
       turnToSideDoor(c, door, from.level);
       c.line(eye(to.stand, to.level));
       return { curve: c, open: openOnApproach(c, door) };
+    case "forward":
+      // Коридор: прямо через дверь к точке чтения следующей комнаты.
+      c.line(eye(to.stand, to.level));
+      return { curve: c, open: openOnApproach(c, door) };
     case "up": {
       // Плавно поднимаемся по лестнице на площадку у двери и проходим.
-      const start = HALF_ROOM - READ_DRIFT; // от стены до точки чтения
+      const start = plan.half - READ_DRIFT; // от стены до точки чтения
       const target = 0.9; // стоим на площадке перед дверью
       const u0 = (start - (STAIRS.depth + 0.3)) / (start - target);
-      c.slope(along(door.from, yaw, HALF_ROOM - target, 0), from.level + RISE + EYE, u0, 1, 0); // взгляд ровный, без наклона по уклону
+      c.slope(along(plan, door.from, yaw, plan.half - target, 0), from.level + RISE + EYE, u0, 1, 0); // взгляд ровный, без наклона по уклону
       c.line(eye(to.stand, to.level));
       return { curve: c, open: openOnApproach(c, door) };
     }
     case "down": {
       // Подвал: одним плавным движением съезжаем по пандусу к двери; она открывается по пути.
-      const start = HALF_ROOM - READ_DRIFT;
+      const start = plan.half - READ_DRIFT;
       const target = 0.8;
       const u0 = Math.max(0, (start - RAMP.length) / (start - target));
       const u1 = (start - RAMP.landing) / (start - target);
-      c.slope(along(door.from, yaw, HALF_ROOM - target, 0), from.level - RISE + EYE, u0, u1, 0); // взгляд ровный, без наклона по уклону
+      c.slope(along(plan, door.from, yaw, plan.half - target, 0), from.level - RISE + EYE, u0, u1, 0); // взгляд ровный, без наклона по уклону
       c.line(eye(to.stand, to.level));
       return { curve: c, open: openOnApproach(c, door) };
     }
@@ -269,16 +261,20 @@ function passage(door: RouteDoor): Passage {
   }
 }
 
-/** Финал: к двери, на улицу, до конца комнаты — там разворачиваемся на месте и смотрим, как закрывается дверь. */
-function exitPassage(door: RouteDoor): Passage {
-  const from = roomById[door.from];
-  const to = roomById[door.to];
+/**
+ * Финал: к двери, на улицу, до конца комнаты — там разворачиваемся на месте и смотрим, как закрывается дверь.
+ * В коридоре (мобильные) — без разворота: просто выходим на улицу.
+ */
+function exitPassage(plan: Plan, door: RouteDoor): Passage {
+  const from = plan.roomById[door.from];
+  const to = plan.roomById[door.to];
   const out = dirOf(door.yaw);
-  const c = new Curve(reading(door.from));
-  turnToSideDoor(c, door, from.level);
-  const farEnd = 2 * OUTSIDE_HALF - 2; // от двери до точки разворота у дальней стены
+  const c = new Curve(reading(plan, door.from));
+  const straight = from.exit === "forward";
+  if (!straight) turnToSideDoor(c, door, from.level);
+  const farEnd = 2 * plan.outsideHalf - 2; // от двери до точки разворота у дальней стены
   c.line(eye({ x: door.x + out.x * farEnd, z: door.z + out.z * farEnd }, to.level));
-  c.turnInPlace(-1, Math.PI, 1.6);
+  if (!straight) c.turnInPlace(-1, Math.PI, 1.6);
   return { curve: c, open: openOnApproach(c, door) };
 }
 
@@ -293,7 +289,7 @@ interface Segment {
 
 const openBetween = (p: number, from: number, to: number) => easeInOut(seg(p, from, to));
 
-function buildSegments(): Segment[] {
+function buildSegments(plan: Plan): Segment[] {
   const list: Segment[] = [];
   const seq = ["vestibule", ...SEQUENCE, "outside"];
   const window3 = (i: number) => {
@@ -307,7 +303,7 @@ function buildSegments(): Segment[] {
     camera: (p, layout) =>
       chain(pose(layout.heroOffsetX, 1.75, layout.heroDistance, 0, 0.02), [
         { from: 0.06, to: 0.46, pose: pose(0, 1.7, 2.4) },
-        { from: 0.56, to: 1, pose: facing("why") },
+        { from: 0.56, to: 1, pose: facing(plan, "why") },
       ], p),
     doors: (p) => ({ hero: openBetween(p, 0.34, 0.6) }),
     visible: window3(0),
@@ -315,11 +311,11 @@ function buildSegments(): Segment[] {
 
   SEQUENCE.forEach((roomId, i) => {
     const idx = i + 1; // индекс в seq
-    list.push({ track: roomId, camera: (p) => mix(facing(roomId), reading(roomId), p), visible: window3(idx) });
+    list.push({ track: roomId, camera: (p) => mix(facing(plan, roomId), reading(plan, roomId), p), visible: window3(idx) });
 
-    const door = doorAfter(roomId);
+    const door = plan.doorAfter(roomId);
     const final = door.to === "outside";
-    const { curve, open: [openFrom, openTo] } = final ? exitPassage(door) : passage(door);
+    const { curve, open: [openFrom, openTo] } = final ? exitPassage(plan, door) : passage(plan, door);
     list.push({
       track: door.id,
       camera: (p) => curve.at(easeSine(p)),
@@ -334,30 +330,36 @@ function buildSegments(): Segment[] {
   return list;
 }
 
-const segments = buildSegments();
+export type Route = (tp: Record<string, number>, layout: Layout, reduced: boolean) => SceneState;
 
-export function evaluate(tp: Record<string, number>, layout: Layout, reduced: boolean): SceneState {
-  const progress = (track: string) => {
-    const p = tp[track] ?? 0;
-    return reduced ? (p < 0.5 ? 0 : 1) : p;
-  };
+/** Маршрут камеры по плану: состояние сцены как функция прогресса участков скролла. */
+export function createRoute(plan: Plan): Route {
+  const segments = buildSegments(plan);
 
-  // Активен последний начавшийся участок; концы соседних участков совпадают, поэтому стыков не видно.
-  let active = segments[0];
-  const doors: Record<string, number> = {};
-  for (const s of segments) {
-    const p = progress(s.track);
-    if (p > 0) active = s;
-    if (s.doors && (p > 0 || s === segments[0])) Object.assign(doors, s.doors(p));
-  }
+  return (tp, layout, reduced) => {
+    const progress = (track: string) => {
+      const p = tp[track] ?? 0;
+      return reduced ? (p < 0.5 ? 0 : 1) : p;
+    };
 
-  return {
-    pose: active.camera(progress(active.track), layout),
-    doors,
-    visible: active.visible,
-    intro: active === segments[0] ? 1 - easeInOut(seg(progress("hero"), 0.02, 0.36)) : 0,
+    // Активен последний начавшийся участок; концы соседних участков совпадают, поэтому стыков не видно.
+    let active = segments[0];
+    const doors: Record<string, number> = {};
+    for (const s of segments) {
+      const p = progress(s.track);
+      if (p > 0) active = s;
+      if (s.doors && (p > 0 || s === segments[0])) Object.assign(doors, s.doors(p));
+    }
+
+    return {
+      pose: active.camera(progress(active.track), layout),
+      doors,
+      visible: active.visible,
+      intro: active === segments[0] ? 1 - easeInOut(seg(progress("hero"), 0.02, 0.36)) : 0,
+    };
   };
 }
 
-/** Все id участков скролла, которые использует маршрут (для проверки разметки). */
-export const TRACKS = segments.map((s) => s.track);
+/** Все id участков скролла, которые использует маршрут (для проверки разметки). Одинаковы для обоих планов. */
+const trackPlan = buildPlan(false);
+export const TRACKS = ["hero", ...SEQUENCE.flatMap((id) => [id, trackPlan.doorAfter(id).id])];
