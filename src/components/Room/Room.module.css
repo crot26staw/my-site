@@ -1,6 +1,6 @@
 .room {
   position: relative;
-  padding: 26vh var(--gutter) 34vh;
+  padding: 6vh var(--gutter) 12vh;
 }
 
 .panel {

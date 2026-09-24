@@ -54,7 +54,7 @@ export function Cases() {
 
       <p className="cta-line" data-reveal>
         <span>Хотите такой же результат? Расскажите о задаче, и мы покажем похожие проекты из вашей ниши.</span>
-        <a href="#contact" className="btn btn--outline">
+        <a href="#contact" data-lead="new" className="btn btn--outline">
           Обсудить проект
         </a>
       </p>

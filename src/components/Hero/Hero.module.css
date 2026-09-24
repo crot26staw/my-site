@@ -2,6 +2,8 @@
 .track {
   position: relative;
   height: 420vh;
+  /* Первый блок поднимается, пока камера входит в комнату (как у .passage) */
+  margin-bottom: -35vh;
 }
 
 .stage {

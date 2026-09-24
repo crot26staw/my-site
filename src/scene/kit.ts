@@ -59,16 +59,20 @@ export interface Opening {
   u: number;
   width: number;
   height: number;
+  /** Низ проёма над полом (для двери наверху лестницы). */
+  bottom?: number;
 }
 
 /**
- * Стена в локальной плоскости XY (u вдоль стены, v вверх) с проёмами от пола.
- * Контур обходит проёмы, поэтому треугуляция всегда корректная.
+ * Стена в локальной плоскости XY (u вдоль стены, v вверх) с проёмами.
+ * Проёмы от пола вырезаются обходом контура (так треугуляция всегда корректна),
+ * приподнятые — отверстиями.
  */
 export function wallGeometry(uMin: number, uMax: number, height: number, openings: Opening[] = []) {
   const shape = new THREE.Shape();
   shape.moveTo(uMin, 0);
-  for (const op of [...openings].sort((a, b) => a.u - b.u)) {
+  const raised = openings.filter((op) => (op.bottom ?? 0) > 0);
+  for (const op of openings.filter((o) => !raised.includes(o)).sort((a, b) => a.u - b.u)) {
     shape.lineTo(op.u - op.width / 2, 0);
     shape.lineTo(op.u - op.width / 2, op.height);
     shape.lineTo(op.u + op.width / 2, op.height);
@@ -78,6 +82,16 @@ export function wallGeometry(uMin: number, uMax: number, height: number, opening
   shape.lineTo(uMax, height);
   shape.lineTo(uMin, height);
   shape.closePath();
+  for (const op of raised) {
+    const b = op.bottom!;
+    const hole = new THREE.Path();
+    hole.moveTo(op.u - op.width / 2, b);
+    hole.lineTo(op.u + op.width / 2, b);
+    hole.lineTo(op.u + op.width / 2, b + op.height);
+    hole.lineTo(op.u - op.width / 2, b + op.height);
+    hole.closePath();
+    shape.holes.push(hole);
+  }
   return new THREE.ShapeGeometry(shape);
 }
 

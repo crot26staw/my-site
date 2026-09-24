@@ -58,7 +58,7 @@ export function Header() {
           <a href={contacts.whatsappUrl} className={s.icon} target="_blank" rel="noopener" aria-label={`WhatsApp ${contacts.whatsapp}`}>
             <WhatsAppIcon />
           </a>
-          <a href="#contact" className={`btn btn--primary btn--sm ${s.cta}`}>
+          <a href="#contact" data-lead="new" className={`btn btn--primary btn--sm ${s.cta}`}>
             Обсудить проект
           </a>
           <button

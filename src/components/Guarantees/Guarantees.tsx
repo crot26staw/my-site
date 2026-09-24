@@ -70,7 +70,7 @@ export function Guarantees() {
       </ul>
 
       <div data-reveal>
-        <a href="#contact" className="btn btn--primary">
+        <a href="#contact" data-lead="new" className="btn btn--primary">
           Обсудить проект
         </a>
       </div>

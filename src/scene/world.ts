@@ -5,12 +5,120 @@ import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
 import { rooms } from "@/config/rooms";
 import { createDoor, type Door } from "./door";
-import { neon, neonText, strip } from "./kit";
+import { box, materials, neon, neonText, strip } from "./kit";
 import { buildRoom, type RoomSpec, type WallSide } from "./room";
 import { evaluate, type Layout } from "./path";
-import { DOORS, ROOMS, WALL, dirOf, roomById, type Bounds, type RouteRoom } from "./route";
+import { DOORS, RAMP, RISE, ROOMS, STAIRS, WALL, dirOf, roomById, type Bounds, type RouteRoom } from "./route";
 
 const DOOR = { width: 3, height: 3.4 };
+
+/**
+ * Лестница вверх у стены с дверью: площадка на высоте rise, ступени спускаются к полу.
+ * face — точка на внутренней поверхности стены напротив двери, inward — единичный вектор внутрь комнаты.
+ */
+function buildStairs(face: { x: number; z: number }, inward: { x: number; z: number }, rise: number, color: string) {
+  const g = new THREE.Group();
+  const edge = neon(color, 2.4);
+  const alongX = Math.abs(inward.x) > 0.5;
+  const w = STAIRS.width;
+  const at = wallFrame(face, inward);
+  const size = (depth: number, h: number): [number, number, number] => (alongX ? [depth, h, w] : [w, h, depth]);
+
+  const stepH = rise / STAIRS.steps;
+  let start = 0;
+  for (let k = 0; k < STAIRS.steps; k++) {
+    const depth = k === 0 ? STAIRS.landing : STAIRS.run;
+    const h = rise - k * stepH;
+    g.add(box(materials.metalDark, size(depth, h), at(start + depth / 2, 0, h / 2)));
+    g.add(strip(edge, at(start + depth - 0.02, -w / 2 + 0.05, h + 0.012), at(start + depth - 0.02, w / 2 - 0.05, h + 0.012), 0.035));
+    start += depth;
+  }
+  return g;
+}
+
+/** Координаты относительно стены: dist — вглубь комнаты, lateral — вдоль стены, y — высота. */
+function wallFrame(face: { x: number; z: number }, inward: { x: number; z: number }) {
+  const alongX = Math.abs(inward.x) > 0.5;
+  return (dist: number, lateral: number, y: number): THREE.Vector3Tuple => [
+    face.x + inward.x * dist + (alongX ? 0 : lateral),
+    y,
+    face.z + inward.z * dist + (alongX ? lateral : 0),
+  ];
+}
+
+/** Плоский четырёхугольник по четырём точкам (по кругу). */
+function quad(material: THREE.Material, a: THREE.Vector3Tuple, b: THREE.Vector3Tuple, c: THREE.Vector3Tuple, d: THREE.Vector3Tuple) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute([...a, ...b, ...c, ...a, ...c, ...d], 3));
+  geometry.computeVertexNormals();
+  return new THREE.Mesh(geometry, material);
+}
+
+/**
+ * Пандус в подвал: от верха (RAMP.length от стены, уровень пола) вниз на rise к площадке у двери.
+ * Боковые стенки, неоновые кромки по краям пандуса и проёма.
+ */
+function buildRamp(face: { x: number; z: number }, inward: { x: number; z: number }, rise: number, color: string) {
+  const g = new THREE.Group();
+  const edge = neon(color, 2.4);
+  const at = wallFrame(face, inward);
+  const w = RAMP.width / 2;
+  const { length: L, landing: Lb } = RAMP;
+  const surface = new THREE.MeshStandardMaterial({ color: 0x0b0d14, roughness: 0.45, metalness: 0.5, side: THREE.DoubleSide });
+  const side = new THREE.MeshStandardMaterial({ color: 0x0f121b, roughness: 0.86, metalness: 0.18, side: THREE.DoubleSide });
+
+  // Площадка у двери и наклонная плоскость
+  g.add(quad(surface, at(0, -w, -rise), at(0, w, -rise), at(Lb, w, -rise), at(Lb, -w, -rise)));
+  g.add(quad(surface, at(Lb, -w, -rise), at(Lb, w, -rise), at(L, w, 0), at(L, -w, 0)));
+
+  for (const s of [-1, 1]) {
+    // Боковая стенка: от кромки пола вниз до пандуса
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute([...at(0, s * w, 0), ...at(0, s * w, -rise), ...at(Lb, s * w, -rise), ...at(0, s * w, 0), ...at(Lb, s * w, -rise), ...at(L, s * w, 0)], 3),
+    );
+    geometry.computeVertexNormals();
+    g.add(new THREE.Mesh(geometry, side));
+
+    // Неоновая кромка вдоль пандуса (по уклону) и вдоль края проёма
+    const low = at(Lb, s * (w - 0.08), -rise + 0.02);
+    const high = at(L, s * (w - 0.08), 0.02);
+    const dir = new THREE.Vector3(high[0] - low[0], high[1] - low[1], high[2] - low[2]);
+    const tube = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, dir.length()), edge);
+    tube.position.set((low[0] + high[0]) / 2, (low[1] + high[1]) / 2, (low[2] + high[2]) / 2);
+    tube.lookAt(high[0], high[1], high[2]);
+    g.add(tube);
+    g.add(strip(edge, at(0, s * (w - 0.08), -rise + 0.02), at(Lb, s * (w - 0.08), -rise + 0.02), 0.04));
+    g.add(strip(edge, at(0, s * w, 0.012), at(L, s * w, 0.012), 0.035));
+  }
+  g.add(strip(edge, at(L, -w, 0.012), at(L, w, 0.012), 0.035));
+
+  // Стена ниже пола по бокам от двери (между откосом и стенкой пандуса)
+  const gap = w - (DOOR.width / 2 + 0.16);
+  for (const s of [-1, 1]) {
+    const alongX = Math.abs(inward.x) > 0.5;
+    const size: [number, number, number] = alongX ? [WALL, rise, gap] : [gap, rise, WALL];
+    g.add(box(materials.wall, size, at(-WALL / 2, s * (w - gap / 2), -rise / 2)));
+  }
+  return g;
+}
+
+/** Прямоугольник, который пандус в подвал вырезает в полу. */
+function stairsFootprint(roomId: string) {
+  const door = DOORS.find((d) => d.from === roomId)!;
+  const d = dirOf(door.yaw);
+  const face = { x: door.x - d.x * (WALL / 2), z: door.z - d.z * (WALL / 2) };
+  const far = { x: face.x - d.x * RAMP.length, z: face.z - d.z * RAMP.length };
+  const half = RAMP.width / 2;
+  const alongX = Math.abs(d.x) > 0.5;
+  return {
+    minX: alongX ? Math.min(face.x, far.x) : face.x - half,
+    maxX: alongX ? Math.max(face.x, far.x) : face.x + half,
+    minZ: alongX ? face.z - half : Math.min(face.z, far.z),
+    maxZ: alongX ? face.z + half : Math.max(face.z, far.z),
+  };
+}
 
 /** На какой стене комнаты стоит точка (дверь чуть за стеной) и её координата вдоль стены. */
 function wallAt(b: Bounds, x: number, z: number): { side: WallSide; along: number } {
@@ -93,9 +201,14 @@ export class World {
       for (const d of DOORS) {
         if (d.from !== r.id && d.to !== r.id) continue;
         const { side, along } = wallAt(r.bounds, d.x, d.z);
-        (openings[side] ??= []).push({ center: along, ...opening });
+        const bottom = d.y - r.level;
+        // Дверь в подвале: низ проёма ниже пола — в стене комнаты вырезаем только часть над полом.
+        (openings[side] ??= []).push(
+          bottom < 0 ? { center: along, width: opening.width, height: opening.height + bottom } : { center: along, ...opening, bottom },
+        );
       }
       const contentWall = r.contentYaw === undefined ? undefined : wallInDirection(r, r.contentYaw);
+      const freeContentWall = contentWall && !openings[contentWall.side] ? contentWall : undefined;
 
       group.add(
         buildRoom({
@@ -105,39 +218,47 @@ export class World {
           color2: colors.neon2,
           barsAlong: r.barsAlong,
           openings,
-          plainWalls: contentWall ? [contentWall.side] : [],
+          plainWalls: freeContentWall ? [freeContentWall.side] : [],
+          floorHole: r.stairs === "down" ? stairsFootprint(r.id) : undefined,
         }),
       );
 
-      // Надпись на стене напротив входа; если там дверь (первая комната) — над ней.
-      const entry = DOORS.find((d) => d.to === r.id && d.id !== "exit");
-      if (r.sign && entry) {
-        const wall = wallInDirection(r, entry.yaw);
-        const d = dirOf(entry.yaw);
-        const hasDoor = DOORS.some((door) => (door.from === r.id || door.to === r.id) && door !== entry && wallAt(r.bounds, door.x, door.z).side === wall.side);
-        const dist = wall.distance - 0.14;
-        this.sign(r.sign, colors.neon, [r.stand.x + d.x * dist, hasDoor ? 4.16 : 3.55, r.stand.z + d.z * dist], entry.yaw, group, hasDoor ? 0.3 : undefined);
-      }
-
-      if (contentWall && r.contentYaw !== undefined) {
+      // Стена с контентом без двери (дверь сбоку): неоновая рамка-экран и надпись над ней.
+      // Если в этой стене дверь дальше — её подсветка и табличка работают вместо рамки.
+      if (freeContentWall && r.contentYaw !== undefined) {
         const d = dirOf(r.contentYaw);
         const onX = Math.abs(d.x) > 0.5;
-        const plane = (onX ? r.stand.x + d.x * contentWall.distance : r.stand.z + d.z * contentWall.distance) - (onX ? d.x : d.z) * 0.05;
+        const plane = (onX ? r.stand.x + d.x * freeContentWall.distance : r.stand.z + d.z * freeContentWall.distance) - (onX ? d.x : d.z) * 0.05;
         this.screenFrame(onX ? "x" : "z", plane, onX ? r.stand.z : r.stand.x, colors.neon, colors.neon2, group);
+        if (r.sign) {
+          const dist = freeContentWall.distance - 0.14;
+          this.sign(r.sign, colors.neon, [r.stand.x + d.x * dist, 4.32, r.stand.z + d.z * dist], r.contentYaw, group, 0.34);
+        }
       }
+
+      // У дальней стены: лестница вверх или пандус в подвал.
+      if (r.stairs) {
+        const door = DOORS.find((d) => d.from === r.id)!;
+        const d = dirOf(door.yaw);
+        const face = { x: door.x - d.x * (WALL / 2), z: door.z - d.z * (WALL / 2) };
+        const inward = { x: -d.x, z: -d.z };
+        group.add(r.stairs === "up" ? buildStairs(face, inward, RISE, colors.neon) : buildRamp(face, inward, RISE, colors.neon));
+      }
+      group.position.y = r.level;
 
       group.add(this.buildDust(r.bounds, r.height));
       this.scene.add(group);
       this.roomGroups.set(r.id, group);
     }
 
-    this.sign("ВЕБ-СТУДИЯ", rooms.hero.neon2, [5 - 0.14, 2.9, 4.2], -Math.PI / 2, this.roomGroups.get("vestibule")!);
+    const vestibule = roomById.vestibule.bounds;
+    this.sign("ВЕБ-СТУДИЯ", rooms.hero.neon2, [vestibule.maxX - 0.14, 2.9, 4.2], -Math.PI / 2, this.roomGroups.get("vestibule")!);
 
     // Двери: цвет двери = цвет комнаты, в которую она ведёт.
     for (const d of DOORS) {
       const colors = rooms[d.id === "hero" ? "hero" : roomById[d.to].colors];
-      const door = createDoor({ ...DOOR, depth: WALL, color: colors.neon, color2: colors.neon2, label: d.label });
-      door.group.position.set(d.x, 0, d.z);
+      const door = createDoor({ ...DOOR, depth: WALL, color: colors.neon, color2: colors.neon2, label: d.label, labelBack: d.labelBack });
+      door.group.position.set(d.x, d.y, d.z);
       door.group.rotation.y = d.yaw; // лицевая сторона смотрит в комнату, из которой подходим
       door.setOpen(0);
       this.scene.add(door.group);

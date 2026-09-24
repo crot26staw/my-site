@@ -1,7 +1,7 @@
 import { city, site, supportDays } from "@/config/site";
 import { TelegramIcon } from "../icons";
 import { Room } from "../Room/Room";
-import s from "./Faq.module.css";
+import { FaqList } from "./FaqList";
 
 const faq: { q: string; a: string }[] = [
   {
@@ -59,17 +59,7 @@ const jsonLd = {
 export function Faq() {
   return (
     <Room id="faq" room="faq" index="10" title="Частые вопросы">
-      <div className={s.list}>
-        {faq.map(({ q, a }) => (
-          <details key={q} className={s.item} data-reveal>
-            <summary className={s.question}>
-              <span>{q}</span>
-              <span className={s.toggle} aria-hidden="true" />
-            </summary>
-            <p className={s.answer}>{a}</p>
-          </details>
-        ))}
-      </div>
+      <FaqList items={faq} />
 
       <div data-reveal>
         <a href={site.contacts.telegramUrl} target="_blank" rel="noopener" className="btn btn--outline">

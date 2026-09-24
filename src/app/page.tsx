@@ -7,6 +7,7 @@ import { ForWhom } from "@/components/ForWhom/ForWhom";
 import { Guarantees } from "@/components/Guarantees/Guarantees";
 import { Header } from "@/components/Header/Header";
 import { Hero } from "@/components/Hero/Hero";
+import { LeadModal } from "@/components/LeadModal/LeadModal";
 import { Pricing } from "@/components/Pricing/Pricing";
 import { Process } from "@/components/Process/Process";
 import { Quiz } from "@/components/Quiz/Quiz";
@@ -19,11 +20,11 @@ import { Why } from "@/components/Why/Why";
 
 /**
  * Каждый блок — комната в 3D-сцене. Между комнатами — Passage: участок скролла,
- * на котором камера поворачивает к двери и проходит в следующую комнату.
+ * на котором камера проходит через дверь в следующую комнату.
  * Порядок здесь должен совпадать с SEQUENCE и DOORS в src/scene/route.ts.
  *
- * Прогулка — петля: зал «Контакты» примыкает к первой комнате, и в конце
- * мы выходим через ту же дверь, в которую вошли. Футер — снаружи, в вестибюле.
+ * Маршрут повторяет цикл: дверь слева (дугой) → прямо вверх по лестнице →
+ * дверь справа (дугой) → прямо вниз. В конце выходим наружу и оборачиваемся к двери — футер там.
  */
 export default function HomePage() {
   return (
@@ -58,6 +59,7 @@ export default function HomePage() {
       </main>
       <Footer />
       <FloatingTelegram />
+      <LeadModal />
       <ScrollDirector />
     </>
   );

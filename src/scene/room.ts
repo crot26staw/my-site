@@ -12,11 +12,13 @@ export interface RoomSpec {
   color: string;
   color2: string;
   /** Проёмы: center — мировая координата вдоль стены (x для z-стен, z для x-стен). */
-  openings?: Partial<Record<WallSide, { center: number; width: number; height: number }[]>>;
+  openings?: Partial<Record<WallSide, { center: number; width: number; height: number; bottom?: number }[]>>;
   /** Стены без декоративных панелей (например, стена под HTML-контент). */
   plainWalls?: WallSide[];
   /** Направление световых балок на потолке; по умолчанию вдоль длинной стороны. */
   barsAlong?: "x" | "z";
+  /** Проём в полу (лестница в подвал). */
+  floorHole?: { minX: number; maxX: number; minZ: number; maxZ: number };
 }
 
 /**
@@ -35,25 +37,52 @@ export function buildRoom(spec: RoomSpec): THREE.Group {
   const second = neon(spec.color2, 1.8);
   const tube = neon("#cfd8ff", 0.85);
 
-  // Пол и потолок
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), materials.floor);
+  // Пол (с проёмом под лестницу, если есть) и потолок.
+  // Пол строится в плоскости XY и кладётся поворотом −π/2 вокруг X: (x, y) → (x, 0, −y).
+  const floorShape = new THREE.Shape();
+  floorShape.moveTo(minX, -maxZ);
+  floorShape.lineTo(maxX, -maxZ);
+  floorShape.lineTo(maxX, -minZ);
+  floorShape.lineTo(minX, -minZ);
+  floorShape.closePath();
+  const hole = spec.floorHole;
+  if (hole) {
+    const path = new THREE.Path();
+    path.moveTo(hole.minX, -hole.maxZ);
+    path.lineTo(hole.maxX, -hole.maxZ);
+    path.lineTo(hole.maxX, -hole.minZ);
+    path.lineTo(hole.minX, -hole.minZ);
+    path.closePath();
+    floorShape.holes.push(path);
+  }
+  const floor = new THREE.Mesh(new THREE.ShapeGeometry(floorShape), materials.floor);
   floor.rotation.x = -Math.PI / 2;
-  floor.position.set(cx, 0, cz);
   g.add(floor);
   const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(w, d), materials.ceiling);
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.set(cx, h, cz);
   g.add(ceiling);
 
-  // Сетка на полу
-  const grid = new THREE.GridHelper(Math.max(w, d), Math.round(Math.max(w, d) / 1.2), spec.color, spec.color);
-  const gridMat = grid.material as THREE.LineBasicMaterial;
-  gridMat.transparent = true;
-  gridMat.opacity = 0.09;
-  gridMat.toneMapped = false;
-  grid.position.set(cx, 0.004, cz);
-  grid.scale.set(w / Math.max(w, d), 1, d / Math.max(w, d));
-  g.add(grid);
+  // Сетка на полу — линии обходят проём
+  const cell = 1.2;
+  const pts: number[] = [];
+  const segment = (x1: number, z1: number, x2: number, z2: number) => pts.push(x1, 0.004, z1, x2, 0.004, z2);
+  for (let x = minX + cell; x < maxX - 0.01; x += cell) {
+    if (hole && x > hole.minX && x < hole.maxX) {
+      if (hole.minZ > minZ) segment(x, minZ, x, hole.minZ);
+      if (hole.maxZ < maxZ) segment(x, hole.maxZ, x, maxZ);
+    } else segment(x, minZ, x, maxZ);
+  }
+  for (let z = minZ + cell; z < maxZ - 0.01; z += cell) {
+    if (hole && z > hole.minZ && z < hole.maxZ) {
+      if (hole.minX > minX) segment(minX, z, hole.minX, z);
+      if (hole.maxX < maxX) segment(hole.maxX, z, maxX, z);
+    } else segment(minX, z, maxX, z);
+  }
+  const gridGeometry = new THREE.BufferGeometry();
+  gridGeometry.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  const gridMat = new THREE.LineBasicMaterial({ color: spec.color, transparent: true, opacity: 0.09, toneMapped: false });
+  g.add(new THREE.LineSegments(gridGeometry, gridMat));
 
   // Стены
   const walls: Record<WallSide, { uMin: number; uMax: number; toU: (c: number) => number; place: (m: THREE.Object3D) => void }> = {
@@ -66,7 +95,7 @@ export function buildRoom(spec: RoomSpec): THREE.Group {
 
   for (const side of Object.keys(walls) as WallSide[]) {
     const wall = walls[side];
-    const openings: Opening[] = (spec.openings?.[side] ?? []).map((o) => ({ u: wall.toU(o.center), width: o.width, height: o.height }));
+    const openings: Opening[] = (spec.openings?.[side] ?? []).map((o) => ({ u: wall.toU(o.center), width: o.width, height: o.height, bottom: o.bottom }));
     const mesh = new THREE.Mesh(wallGeometry(wall.uMin, wall.uMax, h, openings), materials.wall);
     wall.place(mesh);
     g.add(mesh);

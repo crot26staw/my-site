@@ -9,6 +9,8 @@ export interface DoorOptions {
   color: string;
   color2: string;
   label?: string;
+  /** Табличка на обратной стороне. */
+  labelBack?: string;
 }
 
 export interface Door {
@@ -88,6 +90,12 @@ export function createDoor(o: DoorOptions): Door {
     const sign = neonText(o.label, { color: o.color2, height: 0.22, intensity: 1.05 });
     sign.position.set(0, o.height + jamb + 0.5, o.depth / 2 + 0.14);
     group.add(sign);
+  }
+  if (o.labelBack) {
+    const back = neonText(o.labelBack, { color: o.color2, height: 0.22, intensity: 1.05 });
+    back.position.set(0, o.height + jamb + 0.5, -(o.depth / 2 + 0.14));
+    back.rotation.y = Math.PI;
+    group.add(back);
   }
 
   let open = 0;

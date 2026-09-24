@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import Lenis from "lenis";
 import { QUIZ_PLAN_EVENT } from "@/config/quiz";
 import { TRACKS } from "@/scene/path";
-import { emitFrame, measureTrack, prefersReducedMotion, trackProgress } from "@/lib/scroll";
+import { emitFrame, measureTrack, onScrollLock, prefersReducedMotion, trackProgress } from "@/lib/scroll";
 
 /**
  * Плавный скролл (Lenis), прогресс участков data-track, якоря и появление [data-reveal].
@@ -14,6 +14,8 @@ export function ScrollDirector() {
   useEffect(() => {
     const reduced = prefersReducedMotion();
     const lenis = reduced ? null : new Lenis({ autoRaf: false, lerp: 0.09, wheelMultiplier: 0.9 });
+
+    const offScrollLock = onScrollLock((locked) => (locked ? lenis?.stop() : lenis?.start()));
 
     let tracks = Array.from(document.querySelectorAll<HTMLElement>("[data-track]"));
     if (process.env.NODE_ENV !== "production") {
@@ -68,10 +70,7 @@ export function ScrollDirector() {
       }
       history.pushState(null, "", hash === "#top" ? location.pathname : hash);
       if (link.dataset.plan) window.dispatchEvent(new CustomEvent(QUIZ_PLAN_EVENT, { detail: link.dataset.plan }));
-      // data-focus — фокус на конкретном элементе внутри блока (например, форма аудита в #contact).
-      let focusTarget: HTMLElement = (link.dataset.focus && document.getElementById(link.dataset.focus)) || target;
-      if (focusTarget.tagName === "FORM") focusTarget = focusTarget.querySelector<HTMLElement>("input, textarea") ?? focusTarget;
-      if (focusTarget !== document.body) focusTarget.focus({ preventScroll: true });
+      if (target !== document.body) target.focus({ preventScroll: true });
     };
     document.addEventListener("click", onClick);
 
@@ -102,6 +101,7 @@ export function ScrollDirector() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      offScrollLock();
       window.removeEventListener("resize", onResize);
       document.removeEventListener("click", onClick);
       io.disconnect();

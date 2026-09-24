@@ -2,20 +2,54 @@
  * План этажа: комнаты, двери и порядок обхода. Из этих данных строятся
  * и геометрия (world.ts), и маршрут камеры (path.ts).
  *
- * Комнаты стоят в сетке ячеек 12×12 м с шагом 12.4 м (0.4 — толщина стены).
  * yaw — куда смотрит камера: 0 — в −z, π/2 — в −x, −π/2 — в +x, ±π — в +z.
  * Увеличение yaw — поворот налево, уменьшение — направо.
  *
- * Правило прогулки: вошли → поворот к стене с контентом → поворот на 180° к двери
- * на противоположной стене → проход в следующую комнату.
+ * Прогулка повторяет цикл из четырёх комнат (PATTERN):
+ *   left  — дверь в левой стене: читаем блок ближе ко входу и сразу плавно заворачиваем к двери;
+ *   up    — дверь прямо, к ней лестница вверх, следующая комната выше;
+ *   right — то же с дверью справа;
+ *   down  — пандус в подвал от середины комнаты, внизу дверь в следующую комнату.
+ * Контент комнаты всегда на стене впереди при входе. Комнаты расставляются
+ * по маршруту: вход в каждую — по центру её стены.
  */
 import type { RoomId } from "@/config/rooms";
 
 const PI = Math.PI;
 const HALF = PI / 2;
-export const STEP = 12.4;
 export const WALL = 0.4;
 export const HALF_ROOM = 6;
+/** Финальная комната («улица» с футером) меньше остальных. */
+export const OUTSIDE_HALF = 4.5;
+export const ROOM_HEIGHT = 5.6;
+/** Перепад между этажами (лестница). */
+export const RISE = 1;
+/** Боковая дверь: насколько дальше центра комнаты она стоит. */
+export const SIDE_DOOR_DEPTH = 3.6;
+/** В комнате с боковой дверью камера останавливается ближе ко входу — отсюда видна вся стена с контентом. */
+export const SIDE_STAND_BACK = 4.8;
+/** Лестница: площадка у двери и ступени до пола. */
+export const STAIRS = {
+  steps: 5,
+  landing: 0.7,
+  run: 0.45,
+  width: 4.2,
+  get depth() {
+    return this.landing + (this.steps - 1) * this.run;
+  },
+};
+/** Пандус в подвал: от середины комнаты к двери, внизу короткая площадка. */
+export const RAMP = {
+  width: 4.2,
+  /** От стены с дверью до верха пандуса (чуть дальше центра комнаты). */
+  length: HALF_ROOM - 1,
+  landing: 1.2,
+};
+/** Насколько камера подплывает к стене с контентом, пока читаем блок. */
+export const READ_DRIFT = 0.6;
+
+export type ExitKind = "left" | "up" | "right" | "down";
+const PATTERN: ExitKind[] = ["left", "up", "right", "down"];
 
 export interface Bounds {
   minX: number;
@@ -29,15 +63,18 @@ export interface RouteRoom {
   colors: RoomId;
   bounds: Bounds;
   height: number;
-  /** Где стоит камера после входа. */
+  /** Высота пола (мировая). */
+  level: number;
+  center: { x: number; z: number };
+  /** Где стоит камера, пока читаем блок; contentYaw — куда она смотрит (там же контент). */
   stand: { x: number; z: number };
-  /** Куда смотреть на контент (нет у вестибюля). */
   contentYaw?: number;
-  /** Где камера заканчивает «чтение» блока (по умолчанию — чуть ближе к стене с контентом). */
-  readEnd?: { x: number; z: number };
-  /** Надпись на стене напротив входа. */
+  exit?: ExitKind;
+  /** У дальней стены: лестница вверх к двери или пандус вниз в подвал к двери. */
+  stairs?: "up" | "down";
+  /** Надпись над контентом (только на стене без двери). */
   sign?: string;
-  barsAlong?: "x" | "z";
+  barsAlong: "x" | "z";
 }
 
 export interface RouteDoor {
@@ -45,92 +82,146 @@ export interface RouteDoor {
   /** Комната, из которой подходим (лицевая сторона двери смотрит в неё), и комната за дверью. */
   from: string;
   to: string;
-  /** yaw камеры, смотрящей на дверь из комнаты from. */
+  /** Направление прохода через дверь (yaw). */
   yaw: number;
   x: number;
   z: number;
+  /** Низ проёма (мировая высота). */
+  y: number;
   label?: string;
+  /** Надпись на обратной стороне (видна после прохода). */
+  labelBack?: string;
 }
 
 /** Направление взгляда по yaw. */
 export const dirOf = (yaw: number) => ({ x: -Math.sin(yaw), z: -Math.cos(yaw) });
 
-const cell = (a: number, b: number) => ({ x: STEP * a, z: -6.4 - STEP * b });
-const cellBounds = (c: { x: number; z: number }): Bounds => ({
-  minX: c.x - HALF_ROOM,
-  maxX: c.x + HALF_ROOM,
-  minZ: c.z - HALF_ROOM,
-  maxZ: c.z + HALF_ROOM,
+const boundsAround = (c: { x: number; z: number }, half = HALF_ROOM): Bounds => ({
+  minX: c.x - half,
+  maxX: c.x + half,
+  minZ: c.z - half,
+  maxZ: c.z + half,
 });
 
-const H = 4.6;
-
-function room(id: string, colors: RoomId, at: { x: number; z: number }, contentYaw: number, sign: string, barsAlong: "x" | "z"): RouteRoom {
-  return { id, colors, bounds: cellBounds(at), height: H, stand: at, contentYaw, sign, barsAlong };
-}
-
-// Балки на потолке ставим поперёк пути камеры (при входе они горизонтальны).
-export const ROOMS: RouteRoom[] = [
-  {
-    id: "vestibule",
-    colors: "hero",
-    bounds: { minX: -5, maxX: 5, minZ: 0, maxZ: 11 },
-    height: 4.4,
-    stand: { x: 0, z: 6 },
-    barsAlong: "x",
-  },
-  room("why", "why", cell(0, 0), -HALF, "ПОЧЕМУ БЫСТРЕЕ И ДЕШЕВЛЕ", "x"),
-  room("forWhom", "forWhom", cell(-1, 0), PI, "ДЛЯ КОГО МЫ ДЕЛАЕМ САЙТЫ", "z"),
-  room("services", "services", cell(-1, 1), -HALF, "ЧТО МЫ ДЕЛАЕМ", "x"),
-  room("pricing", "pricing", cell(-2, 1), PI, "ЦЕНЫ", "z"),
-  room("cases", "cases", cell(-2, 2), HALF, "НАШИ РАБОТЫ", "x"),
-  room("process", "process", cell(-1, 2), -PI, "КАК МЫ РАБОТАЕМ", "z"),
-  room("quiz", "quiz", cell(-1, 3), HALF, "КАЛЬКУЛЯТОР", "x"),
-  room("team", "team", cell(0, 3), 0, "КОМАНДА", "z"),
-  room("guarantees", "guarantees", cell(0, 2), -1.5 * PI, "ГАРАНТИИ", "x"),
-  room("faq", "faq", cell(1, 2), 0, "ВОПРОСЫ", "z"),
-  // Длинный зал вдоль первой комнаты: входим с дальнего конца, идём вдоль него к выходу в «Почему».
-  {
-    id: "contact",
-    colors: "contact",
-    bounds: { minX: -HALF_ROOM, maxX: STEP + HALF_ROOM, minZ: cell(0, 1).z - HALF_ROOM, maxZ: cell(0, 1).z + HALF_ROOM },
-    height: H,
-    stand: cell(1, 1),
-    contentYaw: -1.5 * PI,
-    readEnd: cell(0, 1),
-    sign: "КОНТАКТЫ",
-    barsAlong: "z",
-  },
-];
-
-export const roomById = Object.fromEntries(ROOMS.map((r) => [r.id, r])) as Record<string, RouteRoom>;
+/** Балки на потолке — поперёк направления движения. */
+const barsAcross = (yaw: number): "x" | "z" => (Math.abs(dirOf(yaw).z) > 0.5 ? "x" : "z");
 
 /** Порядок обхода. Трек участка чтения = id комнаты, трек перехода = id двери. */
 export const SEQUENCE = ["why", "forWhom", "services", "pricing", "cases", "process", "quiz", "team", "guarantees", "faq", "contact"];
 
-/** Дверь на стене комнаты from в направлении yaw. */
-function passageDoor(id: string, from: string, to: string, yaw: number, label: string): RouteDoor {
-  const r = roomById[from];
-  const d = dirOf(yaw);
+const LABELS: Record<string, string> = {
+  forWhom: "ДЛЯ КОГО",
+  services: "УСЛУГИ",
+  pricing: "ЦЕНЫ",
+  cases: "КЕЙСЫ",
+  process: "ПРОЦЕСС",
+  quiz: "КАЛЬКУЛЯТОР",
+  team: "КОМАНДА",
+  guarantees: "ГАРАНТИИ",
+  faq: "ВОПРОСЫ",
+  contact: "КОНТАКТЫ",
+};
+
+const SIGNS: Record<string, string> = {
+  why: "ПОЧЕМУ БЫСТРЕЕ И ДЕШЕВЛЕ",
+  services: "ЧТО МЫ ДЕЛАЕМ",
+  cases: "НАШИ РАБОТЫ",
+  quiz: "КАЛЬКУЛЯТОР",
+  guarantees: "ГАРАНТИИ",
+  contact: "КОНТАКТЫ",
+};
+
+function buildPlan() {
+  const rooms: RouteRoom[] = [
+    {
+      id: "vestibule",
+      colors: "hero",
+      bounds: { minX: -5, maxX: 5, minZ: 0, maxZ: 11 },
+      height: 4.4,
+      level: 0,
+      center: { x: 0, z: 5.5 },
+      stand: { x: 0, z: 6 },
+      barsAlong: "x",
+    },
+  ];
+  const doors: RouteDoor[] = [{ id: "hero", from: "vestibule", to: "why", yaw: 0, x: 0, z: -WALL / 2, y: 0, label: "01 // ВХОД" }];
+
+  // Текущая комната: центр, направление движения при входе, уровень пола.
   const reach = HALF_ROOM + WALL / 2;
-  return { id, from, to, yaw, x: r.stand.x + d.x * reach, z: r.stand.z + d.z * reach, label };
+  let center = { x: 0, z: -WALL - HALF_ROOM };
+  let yaw = 0;
+  let level = 0;
+
+  // После последней комнаты — «улица», куда выходим в финале.
+  const ids = [...SEQUENCE, "outside"];
+  ids.forEach((id, i) => {
+    const isOutside = id === "outside";
+    const exit = isOutside ? undefined : PATTERN[i % PATTERN.length];
+    const d = dirOf(yaw);
+    rooms.push({
+      id,
+      colors: isOutside ? "hero" : (id as RoomId),
+      bounds: boundsAround(center, isOutside ? OUTSIDE_HALF : HALF_ROOM),
+      height: ROOM_HEIGHT,
+      level,
+      center,
+      stand:
+        exit === "left" || exit === "right"
+          ? { x: center.x - d.x * SIDE_STAND_BACK, z: center.z - d.z * SIDE_STAND_BACK }
+          : center,
+      contentYaw: isOutside ? undefined : yaw,
+      exit,
+      stairs: exit === "up" || exit === "down" ? exit : undefined,
+      sign: SIGNS[id],
+      barsAlong: barsAcross(yaw),
+    });
+    if (!exit) return;
+
+    const next = ids[i + 1];
+    const toOutside = next === "outside";
+
+    let doorPos: { x: number; z: number };
+    let doorYaw = yaw;
+    let doorY = level;
+    let nextLevel = level;
+    if (exit === "left" || exit === "right") {
+      // Дверь в боковой стене, ближе к дальней стене.
+      doorYaw = yaw + (exit === "left" ? HALF : -HALF);
+      const side = dirOf(doorYaw);
+      doorPos = {
+        x: center.x + d.x * SIDE_DOOR_DEPTH + side.x * reach,
+        z: center.z + d.z * SIDE_DOOR_DEPTH + side.z * reach,
+      };
+    } else {
+      doorPos = { x: center.x + d.x * reach, z: center.z + d.z * reach };
+      doorY = nextLevel = level + (exit === "up" ? RISE : -RISE);
+    }
+    doors.push({
+      id: toOutside ? "exit" : `door${i + 2}`,
+      from: id,
+      to: next,
+      yaw: doorYaw,
+      ...doorPos,
+      y: doorY,
+      label: toOutside ? "ВЫХОД" : `${String(i + 2).padStart(2, "0")} // ${LABELS[next]}`,
+      labelBack: toOutside ? "ВЫХОД" : undefined,
+    });
+
+    const nd = dirOf(doorYaw);
+    const nextReach = toOutside ? OUTSIDE_HALF + WALL / 2 : reach;
+    center = { x: doorPos.x + nd.x * nextReach, z: doorPos.z + nd.z * nextReach };
+    yaw = doorYaw;
+    level = nextLevel;
+  });
+
+  return { rooms, doors };
 }
 
-export const DOORS: RouteDoor[] = [
-  { id: "hero", from: "vestibule", to: "why", yaw: 0, x: 0, z: -WALL / 2, label: "01 // ВХОД" },
-  passageDoor("door2", "why", "forWhom", HALF, "02 // ДЛЯ КОГО"),
-  passageDoor("door3", "forWhom", "services", 0, "03 // УСЛУГИ"),
-  passageDoor("door4", "services", "pricing", HALF, "04 // ЦЕНЫ"),
-  passageDoor("door5", "pricing", "cases", 0, "05 // КЕЙСЫ"),
-  passageDoor("door6", "cases", "process", -HALF, "06 // ПРОЦЕСС"),
-  passageDoor("door7", "process", "quiz", 0, "07 // КАЛЬКУЛЯТОР"),
-  passageDoor("door8", "quiz", "team", -HALF, "08 // КОМАНДА"),
-  passageDoor("door9", "team", "guarantees", -PI, "09 // ГАРАНТИИ"),
-  passageDoor("door10", "guarantees", "faq", -HALF, "10 // ВОПРОСЫ"),
-  passageDoor("door11", "faq", "contact", -PI, "11 // КОНТАКТЫ"),
-  // Из зала «Контакты» обратно в первую комнату — и дальше на выход через входную дверь.
-  { id: "exit", from: "contact", to: "why", yaw: -PI, x: 0, z: roomById.why.bounds.minZ - WALL / 2, label: "ВЫХОД" },
-];
+const plan = buildPlan();
+export const ROOMS = plan.rooms;
+export const DOORS = plan.doors;
+
+export const roomById = Object.fromEntries(ROOMS.map((r) => [r.id, r])) as Record<string, RouteRoom>;
 
 /** Дверь, ведущая из комнаты дальше по маршруту. */
-export const doorAfter = (roomId: string) => DOORS.find((d) => d.from === roomId && d.id !== "hero")!;
+export const doorAfter = (roomId: string) => DOORS.find((d) => d.from === roomId)!;

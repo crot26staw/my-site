@@ -77,7 +77,7 @@ export function Footer() {
               </li>
               <li className={s.muted}>Работаем: {contacts.workHours}</li>
             </ul>
-            <a href="#contact" className="btn btn--primary btn--sm">
+            <a href="#contact" data-lead="new" className="btn btn--primary btn--sm">
               Обсудить проект
             </a>
           </div>

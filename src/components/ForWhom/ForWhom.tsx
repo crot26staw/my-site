@@ -1,4 +1,5 @@
 import { fromPrice, plans } from "@/config/site";
+import type { LeadVariant } from "../LeadModal/LeadModal";
 import { Room } from "../Room/Room";
 import s from "./ForWhom.module.css";
 
@@ -7,7 +8,7 @@ interface Tile {
   pain: string;
   solution: string;
   price: string;
-  link: { label: string; href: string };
+  link: { label: string; href: string; lead?: LeadVariant };
 }
 
 export function ForWhom() {
@@ -43,7 +44,7 @@ export function ForWhom() {
       solution:
         "Разработаем многостраничный сайт под ваш продукт и добавим нужные фичи: личные кабинеты, калькуляторы, интеграции.",
       price: fromPrice(service.price),
-      link: { label: "Обсудить проект", href: "#contact" },
+      link: { label: "Обсудить проект", href: "#contact", lead: "new" },
     },
   ];
 
@@ -68,7 +69,7 @@ export function ForWhom() {
             <p className={s.solution}>{tile.solution}</p>
             <div className={s.footer}>
               <p className={s.price}>{tile.price}</p>
-              <a href={tile.link.href} className={s.link}>
+              <a href={tile.link.href} data-lead={tile.link.lead} className={s.link}>
                 {tile.link.label}
                 <span aria-hidden="true">→</span>
               </a>
@@ -79,7 +80,7 @@ export function ForWhom() {
 
       <p className="cta-line" data-reveal>
         <span>Не нашли свою ситуацию? Опишите задачу, и мы предложим решение в течение часа.</span>
-        <a href="#contact" className="btn btn--outline">
+        <a href="#contact" data-lead="new" className="btn btn--outline">
           Написать нам
         </a>
       </p>

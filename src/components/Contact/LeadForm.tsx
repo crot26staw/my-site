@@ -6,10 +6,18 @@ import { ChannelPicker, Consent, SUCCESS_MESSAGE, TextField } from "../forms/Fie
 import f from "../forms/forms.module.css";
 import s from "./Contact.module.css";
 
-type Variant = "new" | "audit";
+export type Variant = "new" | "audit";
 
-export function LeadForm({ variant, submitLabel }: { variant: Variant; submitLabel: string }) {
-  const id = `form-${variant}`;
+interface LeadFormProps {
+  variant: Variant;
+  submitLabel: string;
+  /** Префикс id полей: одна и та же форма есть и в блоке «Контакты», и в модалке. */
+  idPrefix?: string;
+}
+
+export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormProps) {
+  const id = `${idPrefix}-${variant}`;
+  const source = `form-${variant}` as const;
   const [values, setValues] = useState({ url: "", name: "", contact: "", task: "" });
   const [channel, setChannel] = useState<Channel>();
   const [consent, setConsent] = useState(false);
@@ -36,7 +44,8 @@ export function LeadForm({ variant, submitLabel }: { variant: Variant; submitLab
     }
     setStatus("sending");
     await submitLead({
-      source: id as "form-new" | "form-audit",
+      source,
+      place: idPrefix === "form" ? "contact" : idPrefix,
       name: values.name,
       contact: values.contact,
       channel,

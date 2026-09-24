@@ -74,7 +74,7 @@ export function Process() {
       <p className={s.note}>Сроки указаны для лендинга, для других проектов рассчитываются индивидуально.</p>
 
       <div data-reveal>
-        <a href="#contact" className="btn btn--primary">
+        <a href="#contact" data-lead="new" className="btn btn--primary">
           Начать с бесплатной консультации
         </a>
       </div>

@@ -1,3 +1,4 @@
+import type { LeadVariant } from "../LeadModal/LeadModal";
 import { Room } from "../Room/Room";
 import s from "./Services.module.css";
 
@@ -5,7 +6,8 @@ interface Service {
   title: string;
   audience: string;
   items: { name: string; text: string }[];
-  cta: { label: string; href: string; focus?: string };
+  /** lead — открыть модалку заявки с этой формой (href — запасной путь без JS). */
+  cta: { label: string; href: string; lead?: LeadVariant };
 }
 
 const services: Service[] = [
@@ -26,7 +28,7 @@ const services: Service[] = [
       { name: "Аудит и оптимизация", text: "находим технические ошибки, проблемы со скоростью и удобством" },
       { name: "Редизайн", text: "обновляем внешний вид и структуру, сохраняя то, что уже работает" },
     ],
-    cta: { label: "Получить бесплатный аудит", href: "#contact", focus: "form-audit" },
+    cta: { label: "Получить бесплатный аудит", href: "#contact", lead: "audit" },
   },
   {
     title: "Переезд на новую платформу",
@@ -37,7 +39,7 @@ const services: Service[] = [
         text: "переносим сайт на другую CMS или кастомное решение без потери данных и позиций в поиске",
       },
     ],
-    cta: { label: "Обсудить переезд", href: "#contact" },
+    cta: { label: "Обсудить переезд", href: "#contact", lead: "new" },
   },
   {
     title: "Продвижение в поиске",
@@ -46,7 +48,7 @@ const services: Service[] = [
       { name: "Семантическое ядро", text: "собираем запросы, по которым ищут именно ваших клиентов" },
       { name: "SEO-оптимизация", text: "сайт с самого начала готов к росту в поиске" },
     ],
-    cta: { label: "Узнать подробнее", href: "#contact" },
+    cta: { label: "Узнать подробнее", href: "#contact", lead: "new" },
   },
 ];
 
@@ -76,7 +78,7 @@ export function Services() {
                 </li>
               ))}
             </ul>
-            <a href={service.cta.href} data-focus={service.cta.focus} className={`btn btn--outline ${s.cta}`}>
+            <a href={service.cta.href} data-lead={service.cta.lead} className={`btn btn--outline ${s.cta}`}>
               {service.cta.label}
             </a>
           </article>
@@ -90,7 +92,7 @@ export function Services() {
               задачи вашего бизнеса.
             </p>
           </div>
-          <a href="#contact" className={`btn btn--primary ${s.cta}`}>
+          <a href="#contact" data-lead="new" className={`btn btn--primary ${s.cta}`}>
             Обсудить задачу
           </a>
         </article>
