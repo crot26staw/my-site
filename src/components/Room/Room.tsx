@@ -10,15 +10,13 @@ interface RoomProps {
   index: string;
   title: string;
   lead?: string;
-  /** Широкая панель — для блоков с многоколоночной раскладкой (тарифы, таймлайн). */
-  wide?: boolean;
   /** Скрывать плавающую кнопку Telegram на мобильных, пока блок на экране (формы). */
   hideFab?: boolean;
   children: React.ReactNode;
 }
 
 /** Блок-комната: контент на неоновой панели поверх 3D-стены. */
-export function Room({ id, room, index, title, lead, wide, hideFab, children }: RoomProps) {
+export function Room({ id, room, index, title, lead, hideFab, children }: RoomProps) {
   const titleId = `${id}-title`;
   return (
     <section
@@ -31,7 +29,7 @@ export function Room({ id, room, index, title, lead, wide, hideFab, children }: 
       tabIndex={-1}
       aria-labelledby={titleId}
     >
-      <div className={`${s.panel} ${wide ? s.wide : ""}`}>
+      <div className={s.panel}>
         <p className="eyebrow" aria-hidden="true">
           // {index}
         </p>

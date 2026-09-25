@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Manrope, Unbounded } from "next/font/google";
 import { site } from "@/config/site";
+import { VIEW_MODE_SCRIPT } from "@/lib/viewModeScript";
 import "lenis/dist/lenis.css";
 import "./globals.css";
 
@@ -35,11 +36,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    // suppressHydrationWarning: инлайн-скрипт ниже добавляет класс js до гидратации
+    // suppressHydrationWarning: инлайн-скрипт ниже добавляет класс js и data-mode до гидратации
     <html lang="ru" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
-        {/* Скрываем [data-reveal] до появления только когда JS доступен */}
-        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+        {/* Скрываем [data-reveal] до появления только когда JS доступен; режим 3D/обычный — до первой отрисовки */}
+        <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js');${VIEW_MODE_SCRIPT}` }} />
       </head>
       <body id="top">{children}</body>
     </html>

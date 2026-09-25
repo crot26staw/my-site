@@ -16,6 +16,7 @@ import { SceneCanvas } from "@/components/SceneCanvas";
 import { ScrollDirector } from "@/components/ScrollDirector";
 import { Services } from "@/components/Services/Services";
 import { Team } from "@/components/Team/Team";
+import { ViewModeToggle } from "@/components/ViewModeToggle";
 import { Why } from "@/components/Why/Why";
 
 /**
@@ -58,6 +59,7 @@ export default function HomePage() {
         <Passage track="exit" long />
       </main>
       <Footer />
+      <ViewModeToggle />
       <FloatingTelegram />
       <LeadModal />
       <ScrollDirector />

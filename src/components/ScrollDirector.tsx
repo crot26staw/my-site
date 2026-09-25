@@ -5,15 +5,18 @@ import Lenis from "lenis";
 import { QUIZ_PLAN_EVENT } from "@/config/quiz";
 import { TRACKS } from "@/scene/path";
 import { emitFrame, measureTrack, onScrollLock, prefersReducedMotion, trackProgress } from "@/lib/scroll";
+import { getViewMode, onViewMode } from "@/lib/viewMode";
 
 /**
  * Плавный скролл (Lenis), прогресс участков data-track, якоря и появление [data-reveal].
  * Один requestAnimationFrame на всю страницу: сцена подписывается через onFrame().
+ * В обычном режиме (без 3D) скролл нативный, прогресс участков не считается.
  */
 export function ScrollDirector() {
   useEffect(() => {
     const reduced = prefersReducedMotion();
-    const lenis = reduced ? null : new Lenis({ autoRaf: false, lerp: 0.09, wheelMultiplier: 0.9 });
+    let lenis: Lenis | null = null;
+    let flat = false;
 
     const offScrollLock = onScrollLock((locked) => (locked ? lenis?.stop() : lenis?.start()));
 
@@ -23,6 +26,24 @@ export function ScrollDirector() {
       if (inDom.join() !== TRACKS.join()) console.warn("Разметка страницы и маршрут камеры расходятся", { inDom, route: TRACKS });
     }
     const lastValues = new Map<HTMLElement, number>();
+
+    const applyViewMode = () => {
+      flat = getViewMode() === "flat";
+      if (flat) {
+        lenis?.destroy();
+        lenis = null;
+        // Сбрасываем то, что участки получили в 3D, — иначе интро первого экрана останется скрытым.
+        for (const el of tracks) {
+          el.style.removeProperty("--p");
+          el.removeAttribute("data-faded");
+        }
+        lastValues.clear();
+      } else if (!reduced && !lenis) {
+        lenis = new Lenis({ autoRaf: false, lerp: 0.09, wheelMultiplier: 0.9 });
+      }
+    };
+    applyViewMode();
+    const offViewMode = onViewMode(applyViewMode);
 
     const updateTracks = () => {
       const vh = window.innerHeight;
@@ -42,7 +63,7 @@ export function ScrollDirector() {
     let rafId = 0;
     const loop = (time: number) => {
       lenis?.raf(time);
-      updateTracks();
+      if (!flat) updateTracks();
       emitFrame(time);
       rafId = requestAnimationFrame(loop);
     };
@@ -102,6 +123,7 @@ export function ScrollDirector() {
     return () => {
       cancelAnimationFrame(rafId);
       offScrollLock();
+      offViewMode();
       window.removeEventListener("resize", onResize);
       document.removeEventListener("click", onClick);
       io.disconnect();

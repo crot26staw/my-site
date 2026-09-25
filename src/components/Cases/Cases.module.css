@@ -89,13 +89,15 @@
   font-weight: 700;
 }
 
+/* Кнопка прижата к низу карточки: в ряду карточки одной высоты, кнопки на одной линии */
 .cta {
   margin-top: auto;
   align-self: flex-start;
 }
 
-.row + .cta {
-  margin-top: 14px;
+/* Минимальный отступ над кнопкой — у последней строки текста, чтобы не мешать margin-top: auto */
+.row:last-of-type {
+  margin-bottom: 24px;
 }
 
 .disabled {

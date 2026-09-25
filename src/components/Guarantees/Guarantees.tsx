@@ -53,7 +53,6 @@ export function Guarantees() {
       id="guarantees"
       room="guarantees"
       index="09"
-      wide
       title="Что мы гарантируем"
       lead="Все обещания с этой страницы мы прописываем в договоре. Вот что вы получаете при работе с нами."
     >

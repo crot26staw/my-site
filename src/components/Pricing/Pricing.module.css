@@ -25,7 +25,7 @@
 @media (min-width: 1200px) {
   .track {
     grid-auto-flow: row;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin-inline: 0;
     padding-inline: 0;
     overflow: visible;
@@ -146,4 +146,11 @@
   width: 100%;
   padding-inline: 12px;
   font-size: 15px;
+}
+
+/* Пять колонок в ширине блока: цена не должна распирать карточку */
+@media (min-width: 1200px) {
+  .price {
+    font-size: clamp(18px, 1.4vw, 20px);
+  }
 }

@@ -6,6 +6,12 @@
   background: linear-gradient(180deg, transparent 0, rgba(4, 5, 10, 0.75) 38vh, rgba(4, 5, 10, 0.96) 55vh);
 }
 
+/* Обычный режим (без 3D): двери за футером нет — прозрачный отступ не нужен */
+:global(:root:not([data-mode="3d"])) .footer {
+  padding-top: 10vh;
+  background: linear-gradient(180deg, transparent 0, rgba(4, 5, 10, 0.96) 10vh);
+}
+
 .inner {
   max-width: var(--container);
   margin: 0 auto;

@@ -5,7 +5,8 @@
 
 .panel {
   position: relative;
-  max-width: 1080px;
+  /* Одна ширина для всех блоков — по сетке сайта (шапка, первый экран, футер) */
+  max-width: var(--container);
   margin: 0 auto;
   padding: clamp(24px, 4vw, 56px);
   background: rgba(5, 7, 12, 0.8);
@@ -16,8 +17,10 @@
     inset 0 0 80px -40px color-mix(in srgb, var(--neon-2) 50%, transparent);
 }
 
-.wide {
-  max-width: 1360px;
+/* Обычный режим (без 3D): блоки идут подряд без пауз на переходы */
+:global(:root:not([data-mode="3d"])) .room {
+  padding-top: clamp(24px, 5vh, 56px);
+  padding-bottom: clamp(24px, 5vh, 56px);
 }
 
 @media (min-width: 900px) {

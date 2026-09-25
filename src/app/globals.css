@@ -136,6 +136,25 @@ a {
   }
 }
 
+/* ---------- Обычный режим (без 3D) ----------
+   Режим по умолчанию; 3D включает data-mode="3d" на <html> (src/lib/viewMode.ts). */
+
+:root:not([data-mode="3d"]) .passage {
+  display: none;
+}
+
+/* Вместо комнат — неоновая сетка на фоне */
+:root:not([data-mode="3d"]) .scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(0, 229, 255, 0.07) 1px, transparent 1px) 0 0 / 64px 64px,
+    linear-gradient(90deg, rgba(255, 43, 214, 0.06) 1px, transparent 1px) 0 0 / 64px 64px;
+  mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 100%);
+  -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 100%);
+}
+
 /* ---------- Типографика ---------- */
 
 .eyebrow {
@@ -324,11 +343,146 @@ a {
     0 0 34px rgba(0, 229, 255, 0.85);
 }
 
+/* Кнопка 3D над Telegram. В обычном режиме курсор «кликает» по ней и расходится волна;
+   включён 3D — кнопка спокойная, с неоновой обводкой. Анимации кнопки и курсора синхронны (одна длительность). */
+.fab--mode {
+  --fab-size: 56px;
+  --click-cycle: 2.8s;
+  bottom: calc(16px + var(--fab-size) + 14px + env(safe-area-inset-bottom));
+  padding: 0;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #06070c;
+  background: var(--neon-magenta);
+  box-shadow: 0 0 24px rgba(255, 43, 214, 0.6);
+  animation: mode-click var(--click-cycle) ease-in-out infinite;
+}
+
+.fab--mode:hover {
+  animation: none;
+  box-shadow:
+    0 0 0 6px rgba(255, 43, 214, 0.25),
+    0 0 34px rgba(255, 43, 214, 0.85);
+}
+
+.fab--mode[aria-pressed="true"] {
+  color: var(--neon-magenta);
+  background: rgba(6, 7, 12, 0.85);
+  box-shadow:
+    inset 0 0 0 2px var(--neon-magenta),
+    0 0 20px rgba(255, 43, 214, 0.45);
+  text-shadow: 0 0 10px rgba(255, 43, 214, 0.8);
+  animation: none;
+}
+
+.fab--mode[aria-pressed="true"]:hover {
+  box-shadow:
+    inset 0 0 0 2px var(--neon-magenta),
+    0 0 30px rgba(255, 43, 214, 0.7);
+}
+
+/* Кончик стрелки (4,2 в viewBox) — чуть правее и ниже центра кнопки */
+.fab__cursor {
+  position: absolute;
+  left: calc(58% - 4px);
+  top: calc(58% - 2px);
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  transform-origin: 4px 2px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  animation: cursor-click var(--click-cycle) ease-in-out infinite;
+}
+
+.fab__cursor svg {
+  display: block;
+}
+
+.fab--mode:hover .fab__cursor {
+  animation: none;
+  opacity: 0;
+}
+
+/* Кнопка: вдавливается в момент клика, затем расходится волна */
+@keyframes mode-click {
+  0%,
+  38% {
+    transform: none;
+    box-shadow:
+      0 0 0 0 rgba(255, 43, 214, 0),
+      0 0 24px rgba(255, 43, 214, 0.6);
+  }
+  43% {
+    transform: scale(0.88);
+    box-shadow:
+      0 0 0 0 rgba(255, 43, 214, 0.7),
+      0 0 30px rgba(255, 43, 214, 0.8);
+  }
+  50% {
+    transform: none;
+  }
+  80%,
+  100% {
+    transform: none;
+    box-shadow:
+      0 0 0 18px rgba(255, 43, 214, 0),
+      0 0 24px rgba(255, 43, 214, 0.6);
+  }
+}
+
+/* Курсор: подлетает слева снизу, кликает, исчезает */
+@keyframes cursor-click {
+  0% {
+    opacity: 0;
+    transform: translate(-34px, 28px);
+  }
+  12% {
+    opacity: 1;
+  }
+  36% {
+    transform: none;
+  }
+  43% {
+    transform: scale(0.78);
+  }
+  50% {
+    transform: none;
+  }
+  72% {
+    opacity: 1;
+    transform: none;
+  }
+  88%,
+  100% {
+    opacity: 0;
+    transform: translate(6px, 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab--mode {
+    animation: none;
+  }
+
+  .fab__cursor {
+    display: none;
+  }
+}
+
 @media (max-width: 767px) {
   .fab {
     width: 50px;
     height: 50px;
     transition: opacity 0.25s, transform 0.25s, visibility 0.25s;
+  }
+
+  .fab--mode {
+    --fab-size: 50px;
+    font-size: 14px;
   }
 
   .fab-hidden .fab {

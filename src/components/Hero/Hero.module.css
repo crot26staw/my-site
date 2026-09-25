@@ -192,3 +192,32 @@
     animation: none;
   }
 }
+
+/* Обычный режим (без 3D): первый экран без длинного участка скролла и анимации входа */
+:global(:root:not([data-mode="3d"])) .track {
+  height: auto;
+  margin-bottom: 0;
+}
+
+:global(:root:not([data-mode="3d"])) .stage {
+  position: relative;
+  height: auto;
+  min-height: 92vh;
+  min-height: 92svh;
+  align-items: center;
+  padding-top: calc(var(--header-h) + 40px);
+  padding-bottom: 72px;
+}
+
+:global(:root:not([data-mode="3d"])) .stage::before {
+  opacity: 0.6;
+}
+
+:global(:root:not([data-mode="3d"])) .content {
+  opacity: 1;
+  transform: none;
+}
+
+:global(:root:not([data-mode="3d"])) .hint {
+  opacity: 1;
+}
