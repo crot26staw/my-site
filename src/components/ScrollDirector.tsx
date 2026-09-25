@@ -2,9 +2,11 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
-import { QUIZ_PLAN_EVENT } from "@/config/quiz";
+import { rooms, type RoomId } from "@/config/rooms";
 import { TRACKS } from "@/scene/path";
-import { emitFrame, measureTrack, onScrollLock, prefersReducedMotion, trackProgress } from "@/lib/scroll";
+import { emitFrame, measureTrack, onFrame, onScrollLock, prefersReducedMotion, trackProgress } from "@/lib/scroll";
+import { initPress } from "@/lib/press";
+import { initReveal } from "@/lib/reveal";
 import { getViewMode, onViewMode } from "@/lib/viewMode";
 
 /**
@@ -90,44 +92,67 @@ export function ScrollDirector() {
         target.scrollIntoView();
       }
       history.pushState(null, "", hash === "#top" ? location.pathname : hash);
-      if (link.dataset.plan) window.dispatchEvent(new CustomEvent(QUIZ_PLAN_EVENT, { detail: link.dataset.plan }));
       if (target !== document.body) target.focus({ preventScroll: true });
     };
     document.addEventListener("click", onClick);
 
-    // Появление блоков при прокрутке.
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("is-visible");
-            io.unobserve(entry.target);
+    const offReveal = initReveal();
+
+    // Плавающие кнопки (Telegram, 3D) на мобильных прячутся, только когда под ними оказывается
+    // кнопка формы из блока [data-hide-fab]. Кнопки квиза меняются по шагам, поэтому ищем их на каждой проверке.
+    const FAB_ZONE_H = 150; // две плавающие кнопки с отступами + safe-area
+    const FAB_ZONE_W = 80;
+    const mobile = window.matchMedia("(max-width: 767px)");
+    let fabHidden = false;
+    const updateFab = () => {
+      let covered = false;
+      if (mobile.matches) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        for (const btn of document.querySelectorAll<HTMLElement>("[data-hide-fab] .btn")) {
+          const r = btn.getBoundingClientRect();
+          if (r.bottom > vh - FAB_ZONE_H && r.top < vh && r.right > vw - FAB_ZONE_W && r.width > 0) {
+            covered = true;
+            break;
           }
         }
-      },
-      { rootMargin: "0px 0px -12% 0px" },
-    );
-    document.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
-
-    // Плавающая кнопка Telegram не должна перекрывать кнопки форм на мобильных.
-    const formsOnScreen = new Set<Element>();
-    const fabIo = new IntersectionObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) formsOnScreen.add(entry.target);
-        else formsOnScreen.delete(entry.target);
       }
-      document.documentElement.classList.toggle("fab-hidden", formsOnScreen.size > 0);
-    });
-    document.querySelectorAll("[data-hide-fab]").forEach((el) => fabIo.observe(el));
+      if (covered !== fabHidden) {
+        fabHidden = covered;
+        document.documentElement.classList.toggle("fab-hidden", covered);
+      }
+    };
+    const offFabFrame = onFrame(updateFab);
+
+    // Свечение фона — под неон блока, который пересекает середину экрана.
+    const scene = document.querySelector<HTMLElement>(".scene");
+    const glowIo = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const room = rooms[(entry.target as HTMLElement).dataset.track as RoomId];
+          if (!entry.isIntersecting || !room || !scene) continue;
+          scene.style.setProperty("--glow", room.neon);
+          scene.style.setProperty("--glow-2", room.neon2);
+        }
+      },
+      { rootMargin: "-50% 0px -50% 0px" },
+    );
+    document.querySelectorAll("main > section[data-track]").forEach((el) => glowIo.observe(el));
+
+    const offPress = reduced ? undefined : initPress();
 
     return () => {
       cancelAnimationFrame(rafId);
+      offPress?.();
       offScrollLock();
       offViewMode();
       window.removeEventListener("resize", onResize);
       document.removeEventListener("click", onClick);
-      io.disconnect();
-      fabIo.disconnect();
+      offReveal();
+      offFabFrame();
+      // Уходим на другую страницу — плавающие кнопки там не должны остаться скрытыми.
+      document.documentElement.classList.remove("fab-hidden");
+      glowIo.disconnect();
       lenis?.destroy();
     };
   }, []);

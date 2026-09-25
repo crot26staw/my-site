@@ -87,7 +87,7 @@ export function Why() {
       </div>
 
       <div className={s.cta} data-reveal>
-        <a href="#quiz" className="btn btn--primary">
+        <a href="#quiz" data-quiz className="btn btn--primary">
           Рассчитать стоимость моего сайта
         </a>
       </div>

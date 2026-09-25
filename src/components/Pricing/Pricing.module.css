@@ -154,3 +154,32 @@
     font-size: clamp(18px, 1.4vw, 20px);
   }
 }
+
+/* «Подробнее» — страница типа сайта. Прижата к кнопке: обе внизу карточки, в ряду на одной линии */
+.more {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 6px;
+  margin: auto 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--neon-2);
+  text-decoration: none;
+}
+
+.more:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.more span {
+  transition: transform 0.2s;
+}
+
+.more:hover span {
+  transform: translateX(4px);
+}
+
+.more + .cta {
+  margin-top: 0;
+}

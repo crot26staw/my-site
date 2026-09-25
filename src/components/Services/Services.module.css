@@ -96,9 +96,63 @@
   font-weight: 700;
 }
 
+/* Кнопка заявки + ссылка «Подробнее» — прижаты к низу карточки */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: auto;
+}
+
 .cta {
   margin-top: auto;
   align-self: flex-start;
+}
+
+.actions .cta {
+  margin-top: 0;
+}
+
+.more {
+  display: inline-flex;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--neon-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Вся карточка — ссылка на страницу услуги: слой ссылки растянут на карточку (.card — position: relative) */
+.more::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* Кнопка заявки и другие ссылки внутри карточки — над этим слоем, у них своё действие */
+.card .cta,
+.card nav {
+  position: relative;
+  z-index: 1;
+}
+
+.card:has(.more) {
+  cursor: pointer;
+}
+
+.card:has(.more:hover) .more,
+.more:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.more span {
+  transition: transform 0.2s;
+}
+
+.card:has(.more:hover) .more span {
+  transform: translateX(4px);
 }
 
 .wide {
@@ -146,4 +200,12 @@
   .cta {
     align-self: stretch;
   }
+
+  .actions .cta {
+    flex: 1 1 100%;
+  }
+}
+
+.allLine {
+  margin-top: 32px;
 }

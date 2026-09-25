@@ -1,0 +1,41 @@
+/* На месте декоративного номера комнаты (.eyebrow) — тот же моноширинный стиль */
+.nav {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  /* Зазор между звеньями — через gap: перенесённое звено начинается ровно от края */
+  gap: 4px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  color: var(--muted);
+}
+
+/* Разделитель «//» — перекличка с номерами комнат на главной */
+.item + .item::before {
+  content: "//";
+  margin-right: 10px;
+  color: var(--neon-2);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--neon-2) 70%, transparent);
+}
+
+.link {
+  color: var(--neon-2);
+  text-decoration: none;
+  transition: text-shadow 0.2s;
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--neon-2) 70%, transparent);
+}

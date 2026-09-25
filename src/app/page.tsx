@@ -6,8 +6,8 @@ import { Footer } from "@/components/Footer/Footer";
 import { ForWhom } from "@/components/ForWhom/ForWhom";
 import { Guarantees } from "@/components/Guarantees/Guarantees";
 import { Header } from "@/components/Header/Header";
+import { Modals } from "@/components/Modals";
 import { Hero } from "@/components/Hero/Hero";
-import { LeadModal } from "@/components/LeadModal/LeadModal";
 import { Pricing } from "@/components/Pricing/Pricing";
 import { Process } from "@/components/Process/Process";
 import { Quiz } from "@/components/Quiz/Quiz";
@@ -61,7 +61,7 @@ export default function HomePage() {
       <Footer />
       <ViewModeToggle />
       <FloatingTelegram />
-      <LeadModal />
+      <Modals />
       <ScrollDirector />
     </>
   );

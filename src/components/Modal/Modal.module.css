@@ -1,0 +1,113 @@
+/* Диалог на весь экран: клик по пустому месту вокруг панели закрывает модалку */
+.dialog {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: 24px var(--gutter);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: var(--text);
+  background: transparent;
+  border: 0;
+}
+
+/* Панель по центру через margin: auto — высокая панель (квиз на телефоне) прокручивается целиком,
+   а не обрезается сверху, как при place-items: center */
+.dialog[open] {
+  display: grid;
+}
+
+/* Панель летит из кнопки / в кнопку (src/lib/popFrom.ts) */
+.dialog[data-animating] {
+  overflow: hidden;
+}
+
+.dialog::backdrop {
+  background: rgba(3, 4, 9, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: fade-in 0.28s ease both;
+}
+
+.dialog[data-closing]::backdrop {
+  animation: fade-out 0.45s ease both;
+}
+
+.panel {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  margin: auto;
+  padding: clamp(24px, 4vw, 40px);
+  background: rgba(6, 8, 14, 0.96);
+  border: 1px solid color-mix(in srgb, var(--neon) 40%, transparent);
+  border-top: 2px solid var(--neon);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.6),
+    0 0 70px -20px color-mix(in srgb, var(--neon) 60%, transparent),
+    inset 0 0 80px -40px color-mix(in srgb, var(--neon-2) 45%, transparent);
+}
+
+/* Для содержимого пошире — квиз */
+.wide {
+  max-width: 760px;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close:hover {
+  color: var(--neon);
+}
+
+/* Крестик из двух линий */
+.close span,
+.close span::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 2px;
+  margin: -1px 0 0 -9px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.close span::before {
+  content: "";
+  margin: 0;
+  top: 0;
+  left: 0;
+  transform: rotate(90deg);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog::backdrop {
+    animation: none;
+  }
+}

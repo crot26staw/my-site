@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Manrope, Unbounded } from "next/font/google";
+import { PageTransition } from "@/components/PageTransition";
 import { site } from "@/config/site";
 import { VIEW_MODE_SCRIPT } from "@/lib/viewModeScript";
 import "lenis/dist/lenis.css";
@@ -42,7 +43,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Скрываем [data-reveal] до появления только когда JS доступен; режим 3D/обычный — до первой отрисовки */}
         <script dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js');${VIEW_MODE_SCRIPT}` }} />
       </head>
-      <body id="top">{children}</body>
+      <body id="top">
+        {children}
+        <PageTransition />
+      </body>
     </html>
   );
 }

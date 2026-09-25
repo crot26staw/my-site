@@ -40,7 +40,7 @@ export function Hero() {
             ))}
           </ul>
           <div className={s.actions}>
-            <a href="#quiz" className="btn btn--primary">
+            <a href="#quiz" data-quiz className="btn btn--primary">
               Рассчитать стоимость
             </a>
             <a href="#why" className="btn btn--ghost">

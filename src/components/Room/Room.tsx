@@ -1,23 +1,30 @@
 import { roomStyle, type RoomId } from "@/config/rooms";
+import { Breadcrumbs, type Crumb } from "../Breadcrumbs/Breadcrumbs";
 import s from "./Room.module.css";
 
-interface RoomProps {
+type RoomProps = {
   /** id секции (якорь). */
   id: string;
   /** Комната: цвета неона и имя участка скролла для камеры. */
   room: RoomId;
-  /** Декоративный номер комнаты. */
-  index: string;
   title: string;
   lead?: string;
   /** Скрывать плавающую кнопку Telegram на мобильных, пока блок на экране (формы). */
   hideFab?: boolean;
   children: React.ReactNode;
-}
+} & (
+  | { /** Декоративный номер комнаты (блок на главной). */ index: string; breadcrumbs?: never }
+  | {
+      /** Блок, который и есть вся страница: крошки вместо номера, заголовок — h1. */
+      breadcrumbs: Crumb[];
+      index?: never;
+    }
+);
 
 /** Блок-комната: контент на неоновой панели поверх 3D-стены. */
-export function Room({ id, room, index, title, lead, hideFab, children }: RoomProps) {
+export function Room({ id, room, index, breadcrumbs, title, lead, hideFab, children }: RoomProps) {
   const titleId = `${id}-title`;
+  const Heading = breadcrumbs ? "h1" : "h2";
   return (
     <section
       id={id}
@@ -30,12 +37,16 @@ export function Room({ id, room, index, title, lead, hideFab, children }: RoomPr
       aria-labelledby={titleId}
     >
       <div className={s.panel}>
-        <p className="eyebrow" aria-hidden="true">
-          // {index}
-        </p>
-        <h2 id={titleId} className="section-title" data-reveal>
+        {breadcrumbs ? (
+          <Breadcrumbs items={breadcrumbs} />
+        ) : (
+          <p className="eyebrow" aria-hidden="true">
+            // {index}
+          </p>
+        )}
+        <Heading id={titleId} className="section-title" data-reveal>
           {title}
-        </h2>
+        </Heading>
         {lead && (
           <p className="section-lead" data-reveal>
             {lead}

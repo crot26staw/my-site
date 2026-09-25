@@ -12,6 +12,9 @@
 }
 
 .column {
+  /* Колонка тянется на высоту соседней, форма — до низа: кнопки отправки на одном уровне */
+  display: flex;
+  flex-direction: column;
   padding: clamp(20px, 3vw, 30px);
   background: rgba(8, 10, 18, 0.92);
   border: 1px solid color-mix(in srgb, var(--neon) 45%, transparent);
@@ -39,11 +42,15 @@
 }
 
 .form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   outline: none;
 }
 
 .submit {
   width: 100%;
+  margin-top: auto;
 }
 
 .fine {

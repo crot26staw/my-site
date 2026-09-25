@@ -6,16 +6,27 @@
   background: linear-gradient(180deg, transparent 0, rgba(4, 5, 10, 0.75) 38vh, rgba(4, 5, 10, 0.96) 55vh);
 }
 
-/* Обычный режим (без 3D): двери за футером нет — прозрачный отступ не нужен */
-:global(:root:not([data-mode="3d"])) .footer {
+/* Обычный режим (без 3D) и отдельные страницы: двери за футером нет — прозрачный отступ не нужен */
+:global(:root:not([data-mode="3d"])) .footer,
+.footer.plain {
   padding-top: 10vh;
   background: linear-gradient(180deg, transparent 0, rgba(4, 5, 10, 0.96) 10vh);
 }
 
 .inner {
+  /* Контент по ширине блоков (как шапка), неоновая линия — на весь экран */
+  position: relative;
   max-width: var(--container);
   margin: 0 auto;
   padding-top: 36px;
+}
+
+.inner::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
   border-top: 1px solid rgba(255, 43, 214, 0.35);
   box-shadow: 0 -1px 24px -12px rgba(255, 43, 214, 0.6);
 }
@@ -87,7 +98,8 @@
   transition: color 0.2s;
 }
 
-.list a:hover {
+.list a:hover,
+.list a[aria-current="page"] {
   color: var(--neon-cyan);
 }
 

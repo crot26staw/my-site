@@ -172,3 +172,27 @@
 .form {
   margin-top: 8px;
 }
+
+/* Квиз в модалке: рамку, фон и отступы даёт панель модалки */
+.widget.embedded {
+  margin-top: 24px;
+  max-width: none;
+  padding: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.modalTitle {
+  margin: 0 48px 10px 0;
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.modalLead {
+  margin: 0;
+  line-height: 1.6;
+  color: var(--muted);
+}

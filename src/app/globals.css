@@ -13,7 +13,7 @@
 
   --header-h: 64px;
   --gutter: 16px;
-  --container: 1240px;
+  --container: 1440px;
 
   color-scheme: dark;
 }
@@ -81,6 +81,20 @@ a {
 
 /* ---------- 3D-сцена ---------- */
 
+/* Цвета свечения фона: ScrollDirector ставит их на .scene под неон блока посередине экрана.
+   Регистрация через @property нужна, чтобы цвет перетекал плавно. */
+@property --glow {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #ff2bd6;
+}
+
+@property --glow-2 {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: #00e5ff;
+}
+
 .scene {
   position: fixed;
   inset: 0;
@@ -88,9 +102,18 @@ a {
   pointer-events: none;
   /* Фон до загрузки WebGL и если он недоступен */
   background:
-    radial-gradient(60% 50% at 70% 55%, rgba(255, 43, 214, 0.22), transparent 70%),
-    radial-gradient(40% 40% at 72% 50%, rgba(0, 229, 255, 0.18), transparent 70%),
+    radial-gradient(60% 50% at 70% 55%, color-mix(in srgb, var(--glow) 22%, transparent), transparent 70%),
+    radial-gradient(40% 40% at 72% 50%, color-mix(in srgb, var(--glow-2) 18%, transparent), transparent 70%),
     linear-gradient(180deg, #05060c, #04050a);
+  transition:
+    --glow 0.9s ease,
+    --glow-2 0.9s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene {
+    transition: none;
+  }
 }
 
 .scene__canvas {
@@ -143,8 +166,9 @@ a {
   display: none;
 }
 
-/* Вместо комнат — неоновая сетка на фоне */
-:root:not([data-mode="3d"]) .scene::after {
+/* Вместо комнат — неоновая сетка на фоне (и всегда на отдельных страницах: .scene--plain) */
+:root:not([data-mode="3d"]) .scene::after,
+.scene--plain::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -153,6 +177,22 @@ a {
     linear-gradient(90deg, rgba(255, 43, 214, 0.06) 1px, transparent 1px) 0 0 / 64px 64px;
   mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 100%);
   -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 100%);
+}
+
+/* ---------- Переход между страницами (src/components/PageTransition.tsx) ----------
+   Встроенный кроссфейд выключен: снимки анимирует PageTransition. Новая страница — окно
+   с неоновой рамкой, как у модалки заявки; старая темнеет под ней. */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  box-shadow:
+    0 0 0 2px var(--neon-magenta),
+    0 0 90px -10px rgba(255, 43, 214, 0.6);
 }
 
 /* ---------- Типографика ---------- */
@@ -314,6 +354,60 @@ a {
     transform: none;
     transition: opacity 0.3s;
   }
+}
+
+/* ---------- Карточка-ссылка ----------
+   Вся карточка [data-card-link] (нужен position: relative) ведёт туда же, куда её ссылка .card-link:
+   псевдоэлемент ссылки растягивается на карточку. Остальные кнопки и ссылки карточки — поверх него. */
+
+.card-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+[data-card-link] :is(a, button):not(.card-link) {
+  position: relative;
+  z-index: 2;
+}
+
+/* Фокус с клавиатуры — рамкой по карточке. Внутри неё: у части карточек углы обрезаны clip-path */
+.card-link:focus-visible {
+  outline: none;
+}
+
+[data-card-link]:has(.card-link:focus-visible) {
+  outline: 2px solid var(--neon-cyan);
+  outline-offset: -4px;
+}
+
+/* ---------- Продавливание карточек под курсором (src/lib/press.ts) ---------- */
+
+:has(> [data-press]) {
+  perspective: 1400px;
+}
+
+[data-press] {
+  rotate: var(--press-x, 0) var(--press-y, 1) 0 var(--press-angle, 0deg);
+  scale: 1;
+}
+
+[data-press][data-pressed] {
+  scale: 0.975;
+}
+
+/* Общий список переходов: правило [data-reveal] выше перебивает transition карточек */
+.js [data-press][data-reveal],
+[data-press] {
+  transition:
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1),
+    rotate 0.3s ease-out,
+    scale 0.3s ease-out,
+    border-color 0.25s,
+    background 0.25s,
+    box-shadow 0.25s;
 }
 
 /* ---------- Плавающая кнопка Telegram ---------- */

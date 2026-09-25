@@ -42,9 +42,6 @@ export interface QuizQuestion {
 
 export const UNKNOWN_TYPE = "unknown";
 
-/** Событие с кнопок тарифов (ссылки с data-plan): предвыбрать тип сайта в вопросе 1. */
-export const QUIZ_PLAN_EVENT = "quiz:plan";
-
 export const quizQuestions: QuizQuestion[] = [
   {
     id: "type",

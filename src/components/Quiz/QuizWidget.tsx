@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { QUIZ_PLAN_EVENT, quizQuestions, quizRange, UNKNOWN_TYPE, type QuizAnswers } from "@/config/quiz";
+import { quizQuestions, quizRange, UNKNOWN_TYPE, type QuizAnswers } from "@/config/quiz";
 import { formatPrice, site, type PlanId } from "@/config/site";
 import { submitLead, validateContact, channels, type Channel } from "@/lib/leads";
 import { ChannelPicker, Consent, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
@@ -11,9 +11,18 @@ import s from "./Quiz.module.css";
 const TOTAL = quizQuestions.length;
 const RESULT = TOTAL;
 
-export function QuizWidget() {
+interface QuizWidgetProps {
+  /** Префикс id и имён полей: на главной два квиза (в блоке и в модалке), поля не должны пересекаться. */
+  idPrefix?: string;
+  /** Тариф, выбранный в первом вопросе заранее (кнопки тарифов, data-plan). */
+  initialPlan?: PlanId;
+  /** Внутри модалки: без своей рамки и фона, их даёт панель. */
+  embedded?: boolean;
+}
+
+export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWidgetProps) {
   const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState<QuizAnswers>({});
+  const [answers, setAnswers] = useState<QuizAnswers>(initialPlan ? { type: [initialPlan] } : {});
   const [channel, setChannel] = useState<Channel>();
   const [contact, setContact] = useState("");
   const [consent, setConsent] = useState(false);
@@ -21,18 +30,6 @@ export function QuizWidget() {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const headingRef = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
-
-  // Предвыбор с кнопок тарифов
-  useEffect(() => {
-    const onPlan = (e: Event) => {
-      const plan = (e as CustomEvent<PlanId>).detail;
-      setAnswers((a) => ({ ...a, type: [plan] }));
-      setStep(0);
-      setStatus("idle");
-    };
-    window.addEventListener(QUIZ_PLAN_EVENT, onPlan);
-    return () => window.removeEventListener(QUIZ_PLAN_EVENT, onPlan);
-  }, []);
 
   // При смене шага переводим фокус на заголовок шага (для клавиатуры и скринридеров)
   useEffect(() => {
@@ -95,7 +92,7 @@ export function QuizWidget() {
   const placeholder = channels.find((c) => c.value === channel)?.placeholder ?? "Ник, номер или e-mail";
 
   return (
-    <div className={s.widget}>
+    <div className={embedded ? `${s.widget} ${s.embedded}` : s.widget}>
       <div className={s.progress} aria-hidden={step === RESULT}>
         <span className={s.counter}>{step === RESULT ? "Готово" : `Вопрос ${step + 1} из ${TOTAL}`}</span>
         <div className={s.bar}>
@@ -105,8 +102,8 @@ export function QuizWidget() {
 
       {question ? (
         <div className={s.step} key={question.id}>
-          <fieldset className={s.fieldset} aria-labelledby={`quiz-q-${question.id}`}>
-            <h3 id={`quiz-q-${question.id}`} ref={headingRef} tabIndex={-1} className={s.question}>
+          <fieldset className={s.fieldset} aria-labelledby={`${idPrefix}-q-${question.id}`}>
+            <h3 id={`${idPrefix}-q-${question.id}`} ref={headingRef} tabIndex={-1} className={s.question}>
               {question.title}
             </h3>
             {question.multiple && <p className={s.hint}>Можно выбрать несколько</p>}
@@ -115,7 +112,7 @@ export function QuizWidget() {
                 <label key={o.value} className={s.option}>
                   <input
                     type={question.multiple ? "checkbox" : "radio"}
-                    name={`quiz-${question.id}`}
+                    name={`${idPrefix}-${question.id}`}
                     value={o.value}
                     checked={selected.includes(o.value)}
                     onChange={() => toggle(o.value)}
@@ -162,9 +159,9 @@ export function QuizWidget() {
                 Точную цену рассчитаем в течение {site.responseMinutes} минут и зафиксируем в договоре. Куда прислать
                 расчёт?
               </p>
-              <ChannelPicker name="quiz-channel" value={channel} onChange={setChannel} error={errors.channel} legend="Куда прислать расчёт" />
+              <ChannelPicker name={`${idPrefix}-channel`} value={channel} onChange={setChannel} error={errors.channel} legend="Куда прислать расчёт" />
               <TextField
-                id="quiz-contact"
+                id={`${idPrefix}-contact`}
                 label="Контакт"
                 value={contact}
                 onChange={setContact}
@@ -174,7 +171,7 @@ export function QuizWidget() {
                 autoComplete={channel === "email" ? "email" : "tel"}
                 error={errors.contact}
               />
-              <Consent id="quiz-consent" checked={consent} onChange={setConsent} error={errors.consent} />
+              <Consent id={`${idPrefix}-consent`} checked={consent} onChange={setConsent} error={errors.consent} />
               <div className={s.nav}>
                 <button type="button" className="btn btn--outline" onClick={onBack}>
                   Назад

@@ -58,7 +58,7 @@ export function Guarantees() {
     >
       <ul className={s.grid}>
         {items.map((item) => (
-          <li key={item.title} className={s.card} data-reveal>
+          <li key={item.title} className={s.card} data-reveal data-press>
             <svg className={s.icon} viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
               <path d={icons[item.icon]} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

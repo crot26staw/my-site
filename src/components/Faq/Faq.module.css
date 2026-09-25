@@ -85,3 +85,15 @@
 .body {
   overflow: hidden;
 }
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 559px) {
+  .actions > * {
+    flex: 1 1 100%;
+  }
+}
