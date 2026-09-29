@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { site } from "@/config/site";
-import { TelegramIcon, WhatsAppIcon } from "../icons";
+import { LogoMark, TelegramIcon, WhatsAppIcon } from "../icons";
 import { PageLink, SectionLink, type SitePage } from "../PageLink";
 import s from "./Header.module.css";
 
@@ -11,7 +11,6 @@ const menu: { label: string; section?: string; page?: SitePage }[] = [
   { page: "services", label: "Услуги" },
   { page: "site-architecture", label: "Типы сайтов и цены" },
   { page: "cases", label: "Кейсы" },
-  { section: "process", label: "Как мы работаем" },
   { page: "faq", label: "FAQ" },
   { section: "contact", label: "Контакты" },
 ];
@@ -33,12 +32,14 @@ export function Header({ page = "home" }: { page?: SitePage }) {
     <header className={s.header}>
       <div className={s.inner}>
         {onHome ? (
-          <a href="#top" className={s.logo}>
-            {site.logo}
+          <a href="#top" className={s.logo} aria-label={`${site.name} — на главную`}>
+            <LogoMark className={s.mark} />
+            <span>{site.name}</span>
           </a>
         ) : (
-          <PageLink href="/" className={s.logo}>
-            {site.logo}
+          <PageLink href="/" className={s.logo} aria-label={`${site.name} — на главную`}>
+            <LogoMark className={s.mark} />
+            <span>{site.name}</span>
           </PageLink>
         )}
 

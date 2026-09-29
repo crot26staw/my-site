@@ -6,10 +6,17 @@
   --line-strong: rgba(255, 255, 255, 0.22);
 
   --neon-cyan: #00e5ff;
-  --neon-magenta: #ff2bd6;
-  /* Акценты комнаты по умолчанию; секции переопределяют через roomStyle() */
-  --neon: var(--neon-magenta);
+  --neon-mint: #00ffc6;
+  --neon-violet: #8b6bff;
+  --neon-pink: #ff2bd6;
+  /* Фирменный цвет интерфейса: мятный, в 3D — розовый (см. «3D-сцена») */
+  --neon-brand: var(--neon-mint);
+  /* Фирменная пара акцентов. Цвета комнат (roomStyle()) их заменяют только в 3D */
+  --neon: var(--neon-brand);
   --neon-2: var(--neon-cyan);
+  /* Свечение мелкого текста: в обычном режиме приглушённое, в 3D — яркое */
+  --text-glow-blur: 8px;
+  --text-glow-mix: 35%;
 
   --header-h: 64px;
   --gutter: 16px;
@@ -75,11 +82,24 @@ a {
 }
 
 ::selection {
-  background: var(--neon-magenta);
+  background: var(--neon-brand);
   color: #05060b;
 }
 
-/* ---------- 3D-сцена ---------- */
+/* ---------- 3D-сцена ----------
+   В 3D у главной своя, прежняя стилистика: розовый интерфейс, яркое свечение, у блоков — цвета комнат.
+   Отдельные страницы (.scene--plain) всегда выглядят как обычный режим. */
+
+:root[data-mode="3d"]:not(:has(.scene--plain)) {
+  --neon-brand: var(--neon-pink);
+  --text-glow-blur: 10px;
+  --text-glow-mix: 70%;
+}
+
+:root[data-mode="3d"]:not(:has(.scene--plain)) [style*="--room-neon"] {
+  --neon: var(--room-neon);
+  --neon-2: var(--room-neon-2);
+}
 
 /* Цвета свечения фона: ScrollDirector ставит их на .scene под неон блока посередине экрана.
    Регистрация через @property нужна, чтобы цвет перетекал плавно. */
@@ -166,6 +186,13 @@ a {
   display: none;
 }
 
+/* Блоки идут подряд, поэтому свечение фона не меняет цвет от блока к блоку (ScrollDirector пишет
+   цвета комнат в инлайн-стиль .scene — !important их перебивает) */
+:root:not([data-mode="3d"]) .scene {
+  --glow: var(--neon-mint) !important;
+  --glow-2: var(--neon-cyan) !important;
+}
+
 /* Вместо комнат — неоновая сетка на фоне (и всегда на отдельных страницах: .scene--plain) */
 :root:not([data-mode="3d"]) .scene::after,
 .scene--plain::after {
@@ -174,7 +201,7 @@ a {
   inset: 0;
   background:
     linear-gradient(rgba(0, 229, 255, 0.07) 1px, transparent 1px) 0 0 / 64px 64px,
-    linear-gradient(90deg, rgba(255, 43, 214, 0.06) 1px, transparent 1px) 0 0 / 64px 64px;
+    linear-gradient(90deg, color-mix(in srgb, var(--neon-brand) 6%, transparent) 1px, transparent 1px) 0 0 / 64px 64px;
   mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 100%);
   -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000 20%, transparent 100%);
 }
@@ -191,8 +218,8 @@ a {
 
 ::view-transition-new(root) {
   box-shadow:
-    0 0 0 2px var(--neon-magenta),
-    0 0 90px -10px rgba(255, 43, 214, 0.6);
+    0 0 0 2px var(--neon-brand),
+    0 0 90px -10px color-mix(in srgb, var(--neon-brand) 60%, transparent);
 }
 
 /* ---------- Типографика ---------- */
@@ -203,7 +230,7 @@ a {
   font-size: 13px;
   letter-spacing: 0.2em;
   color: var(--neon-2);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--neon-2) 70%, transparent);
+  text-shadow: 0 0 var(--text-glow-blur) color-mix(in srgb, var(--neon-2) var(--text-glow-mix), transparent);
 }
 
 .section-title {
@@ -294,13 +321,13 @@ a {
 
 .btn--ghost {
   color: var(--text);
-  background: rgba(255, 43, 214, 0.08);
-  box-shadow: inset 0 0 0 1px var(--neon-magenta);
+  background: color-mix(in srgb, var(--neon-brand) 8%, transparent);
+  box-shadow: inset 0 0 0 1px var(--neon-brand);
 }
 
 .btn--ghost:hover {
-  background: rgba(255, 43, 214, 0.18);
-  filter: drop-shadow(0 0 14px rgba(255, 43, 214, 0.5));
+  background: color-mix(in srgb, var(--neon-brand) 18%, transparent);
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--neon-brand) 50%, transparent));
 }
 
 .btn--outline {
@@ -451,32 +478,32 @@ a {
   font-weight: 800;
   letter-spacing: 0.02em;
   color: #06070c;
-  background: var(--neon-magenta);
-  box-shadow: 0 0 24px rgba(255, 43, 214, 0.6);
+  background: var(--neon-brand);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--neon-brand) 60%, transparent);
   animation: mode-click var(--click-cycle) ease-in-out infinite;
 }
 
 .fab--mode:hover {
   animation: none;
   box-shadow:
-    0 0 0 6px rgba(255, 43, 214, 0.25),
-    0 0 34px rgba(255, 43, 214, 0.85);
+    0 0 0 6px color-mix(in srgb, var(--neon-brand) 25%, transparent),
+    0 0 34px color-mix(in srgb, var(--neon-brand) 85%, transparent);
 }
 
 .fab--mode[aria-pressed="true"] {
-  color: var(--neon-magenta);
+  color: var(--neon-brand);
   background: rgba(6, 7, 12, 0.85);
   box-shadow:
-    inset 0 0 0 2px var(--neon-magenta),
-    0 0 20px rgba(255, 43, 214, 0.45);
-  text-shadow: 0 0 10px rgba(255, 43, 214, 0.8);
+    inset 0 0 0 2px var(--neon-brand),
+    0 0 20px color-mix(in srgb, var(--neon-brand) 45%, transparent);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--neon-brand) 80%, transparent);
   animation: none;
 }
 
 .fab--mode[aria-pressed="true"]:hover {
   box-shadow:
-    inset 0 0 0 2px var(--neon-magenta),
-    0 0 30px rgba(255, 43, 214, 0.7);
+    inset 0 0 0 2px var(--neon-brand),
+    0 0 30px color-mix(in srgb, var(--neon-brand) 70%, transparent);
 }
 
 /* Кончик стрелки (4,2 в viewBox) — чуть правее и ниже центра кнопки */
@@ -507,14 +534,14 @@ a {
   38% {
     transform: none;
     box-shadow:
-      0 0 0 0 rgba(255, 43, 214, 0),
-      0 0 24px rgba(255, 43, 214, 0.6);
+      0 0 0 0 color-mix(in srgb, var(--neon-brand) 0%, transparent),
+      0 0 24px color-mix(in srgb, var(--neon-brand) 60%, transparent);
   }
   43% {
     transform: scale(0.88);
     box-shadow:
-      0 0 0 0 rgba(255, 43, 214, 0.7),
-      0 0 30px rgba(255, 43, 214, 0.8);
+      0 0 0 0 color-mix(in srgb, var(--neon-brand) 70%, transparent),
+      0 0 30px color-mix(in srgb, var(--neon-brand) 80%, transparent);
   }
   50% {
     transform: none;
@@ -523,8 +550,8 @@ a {
   100% {
     transform: none;
     box-shadow:
-      0 0 0 18px rgba(255, 43, 214, 0),
-      0 0 24px rgba(255, 43, 214, 0.6);
+      0 0 0 18px color-mix(in srgb, var(--neon-brand) 0%, transparent),
+      0 0 24px color-mix(in srgb, var(--neon-brand) 60%, transparent);
   }
 }
 

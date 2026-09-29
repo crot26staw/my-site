@@ -5,8 +5,7 @@
  */
 
 export const site = {
-  name: "[Название]",
-  logo: "[Логотип]",
+  name: "Web-Lite",
   url: "https://example.com", // TODO: [домен сайта]
   /** Срок ответа на заявку, минут. */
   responseMinutes: 60,

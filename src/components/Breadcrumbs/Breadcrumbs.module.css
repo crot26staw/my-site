@@ -25,7 +25,7 @@
   content: "//";
   margin-right: 10px;
   color: var(--neon-2);
-  text-shadow: 0 0 10px color-mix(in srgb, var(--neon-2) 70%, transparent);
+  text-shadow: 0 0 var(--text-glow-blur) color-mix(in srgb, var(--neon-2) var(--text-glow-mix), transparent);
 }
 
 .link {
@@ -37,5 +37,5 @@
 .link:hover {
   text-decoration: underline;
   text-underline-offset: 4px;
-  text-shadow: 0 0 10px color-mix(in srgb, var(--neon-2) 70%, transparent);
+  text-shadow: 0 0 var(--text-glow-blur) color-mix(in srgb, var(--neon-2) var(--text-glow-mix), transparent);
 }

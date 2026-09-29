@@ -34,3 +34,15 @@ export function ArrowDownIcon(props: React.SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+/** Логотип Web-Lite: монограмма WL. W — цветом бренда, L — вторым неоном. Фавикон — src/app/icon.svg. */
+export function LogoMark(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true" {...props}>
+      <g fill="none" strokeWidth="2.6" strokeLinecap="square">
+        <path d="M3.5 8l4.5 16 4-11 4 11L20.5 8" stroke="var(--neon-brand, #00ffc6)" strokeLinejoin="miter" />
+        <path d="M24 8v16H28.5" stroke="var(--neon-cyan, #00e5ff)" />
+      </g>
+    </svg>
+  );
+}

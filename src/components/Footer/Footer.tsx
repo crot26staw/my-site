@@ -1,5 +1,5 @@
 import { legal, site } from "@/config/site";
-import { TelegramIcon, WhatsAppIcon } from "../icons";
+import { LogoMark, TelegramIcon, WhatsAppIcon } from "../icons";
 import { PageLink, SectionLink, type SitePage } from "../PageLink";
 import s from "./Footer.module.css";
 
@@ -7,7 +7,6 @@ const nav: { label: string; section?: string; page?: SitePage }[] = [
   { page: "services", label: "Услуги" },
   { page: "site-architecture", label: "Типы сайтов и цены" },
   { page: "cases", label: "Кейсы" },
-  { section: "process", label: "Как мы работаем" },
   { page: "faq", label: "FAQ" },
 ];
 
@@ -31,12 +30,14 @@ export function Footer({ page = "home" }: { page?: SitePage }) {
         <div className={s.grid}>
           <div className={s.col}>
             {onHome ? (
-              <a href="#top" className={s.logo}>
-                {site.logo}
+              <a href="#top" className={s.logo} aria-label={`${site.name} — на главную`}>
+                <LogoMark className={s.mark} />
+                <span>{site.name}</span>
               </a>
             ) : (
-              <PageLink href="/" className={s.logo}>
-                {site.logo}
+              <PageLink href="/" className={s.logo} aria-label={`${site.name} — на главную`}>
+                <LogoMark className={s.mark} />
+                <span>{site.name}</span>
               </PageLink>
             )}
             <p className={s.about}>Сайты под ключ быстрее и дешевле. Разработка, дизайн и SEO с использованием AI-инструментов.</p>

@@ -64,7 +64,7 @@
 
 .accent {
   color: var(--neon);
-  text-shadow: 0 0 18px rgba(255, 43, 214, 0.55);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--neon-brand) 55%, transparent);
 }
 
 .lead {

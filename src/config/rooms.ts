@@ -1,6 +1,7 @@
 /**
- * Неоновые подсветки комнат. Общие для 3D-сцены и HTML-блоков,
- * чтобы акценты интерфейса совпадали со светом в комнате.
+ * Неоновые подсветки комнат 3D-сцены. В 3D те же цвета получают и HTML-блоки,
+ * чтобы акценты интерфейса совпадали со светом в комнате. В обычном режиме и на
+ * отдельных страницах блоки берут фирменную пару из :root (globals.css).
  */
 export const rooms = {
   hero: { neon: "#ff2bd6", neon2: "#00e5ff" },
@@ -19,7 +20,7 @@ export const rooms = {
 
 export type RoomId = keyof typeof rooms;
 
-/** CSS-переменные акцентов для секции. */
+/** Цвета комнаты для секции; в --neon/--neon-2 их переводит globals.css только в 3D-режиме. */
 export function roomStyle(id: RoomId): React.CSSProperties {
-  return { "--neon": rooms[id].neon, "--neon-2": rooms[id].neon2 } as React.CSSProperties;
+  return { "--room-neon": rooms[id].neon, "--room-neon-2": rooms[id].neon2 } as React.CSSProperties;
 }

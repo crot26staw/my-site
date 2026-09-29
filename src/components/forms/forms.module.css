@@ -159,3 +159,12 @@ textarea.input {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* Поле-ловушка: вне экрана, но не display:none — такие поля боты научились пропускать */
+.trap {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

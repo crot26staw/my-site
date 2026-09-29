@@ -24,6 +24,12 @@
 }
 
 .columnHuman {
+  /* Фиолетовый: фирменные мятный и голубой слишком близки, колонки сливались бы */
+  --accent: var(--neon-violet);
+}
+
+/* В 3D — как у комнаты: у неё свой контрастный неон */
+:global(:root[data-mode="3d"]) .columnHuman {
   --accent: var(--neon);
 }
 
@@ -150,7 +156,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   border-top: 2px solid var(--neon);
-  text-shadow: 0 0 12px color-mix(in srgb, var(--neon) 70%, transparent);
+  text-shadow: 0 0 calc(var(--text-glow-blur) + 2px) color-mix(in srgb, var(--neon) var(--text-glow-mix), transparent);
 }
 
 .table tbody tr:last-child .us {

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { submitLead, validateContact, validateUrl, type Channel } from "@/lib/leads";
-import { ChannelPicker, Consent, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
+import { LIMITS, sanitize, useFormGuard } from "@/lib/antispam";
+import { submitLead, validateContact, validateName, validateTask, validateUrl, type Channel } from "@/lib/leads";
+import { ChannelPicker, Consent, FormError, Honeypot, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
 import f from "../forms/forms.module.css";
 import s from "./Contact.module.css";
 
@@ -22,7 +23,9 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
   const [channel, setChannel] = useState<Channel>();
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const guard = useFormGuard();
 
   const set = (key: keyof typeof values) => (v: string) => setValues((prev) => ({ ...prev, [key]: v }));
 
@@ -30,28 +33,45 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
     e.preventDefault();
     const next: Record<string, string | null> = {
       url: variant === "audit" ? validateUrl(values.url) : null,
-      name: values.name.trim() ? null : "Как к вам обращаться?",
+      name: validateName(values.name),
       contact: validateContact(undefined, values.contact),
       channel: channel ? null : "Выберите удобный способ связи",
+      task: variant === "new" ? validateTask(values.task) : null,
       consent: consent ? null : "Нужно ваше согласие",
     };
     setErrors(next);
+    setFormError(null);
     const firstError = Object.keys(next).find((k) => next[k]);
     if (firstError) {
       const selector = firstError === "channel" ? `[name="${id}-channel"]` : `#${id}-${firstError}`;
       e.currentTarget.querySelector<HTMLElement>(selector)?.focus();
       return;
     }
+    const verdict = guard.check();
+    if (!verdict.ok) {
+      if (verdict.bot) setStatus("sent");
+      else setFormError(verdict.error);
+      return;
+    }
     setStatus("sending");
-    await submitLead({
-      source,
-      place: idPrefix === "form" ? "contact" : idPrefix,
-      name: values.name,
-      contact: values.contact,
-      channel,
-      ...(variant === "audit" ? { url: values.url } : { task: values.task }),
-    });
-    setStatus("sent");
+    try {
+      await guard.run(() =>
+        submitLead({
+          source,
+          place: idPrefix === "form" ? "contact" : idPrefix,
+          name: sanitize(values.name, LIMITS.name),
+          contact: sanitize(values.contact, LIMITS.contact),
+          channel,
+          ...(variant === "audit"
+            ? { url: sanitize(values.url, LIMITS.url) }
+            : { task: sanitize(values.task, LIMITS.task, true) }),
+        }),
+      );
+      setStatus("sent");
+    } catch {
+      setStatus("idle");
+      setFormError("Не получилось отправить заявку. Попробуйте ещё раз.");
+    }
   };
 
   if (status === "sent") {
@@ -63,7 +83,8 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
   }
 
   return (
-    <form id={id} className={s.form} onSubmit={onSubmit} noValidate tabIndex={-1}>
+    <form id={id} className={s.form} onSubmit={onSubmit} noValidate tabIndex={-1} style={{ position: "relative" }}>
+      <Honeypot id={`${id}-website`} value={guard.trap} onChange={guard.setTrap} />
       {variant === "audit" && (
         <TextField
           id={`${id}-url`}
@@ -74,10 +95,11 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
           type="url"
           inputMode="url"
           autoComplete="url"
+          maxLength={LIMITS.url}
           error={errors.url}
         />
       )}
-      <TextField id={`${id}-name`} label="Имя" value={values.name} onChange={set("name")} autoComplete="name" error={errors.name} />
+      <TextField id={`${id}-name`} label="Имя" value={values.name} onChange={set("name")} autoComplete="name" maxLength={LIMITS.name} error={errors.name} />
       <TextField
         id={`${id}-contact`}
         label="Телефон или ник в Telegram"
@@ -85,13 +107,24 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
         onChange={set("contact")}
         placeholder="+7 или @ник"
         autoComplete="tel"
+        maxLength={LIMITS.contact}
         error={errors.contact}
       />
       <ChannelPicker name={`${id}-channel`} value={channel} onChange={setChannel} error={errors.channel} />
       {variant === "new" && (
-        <TextField id={`${id}-task`} label="Коротко о задаче" value={values.task} onChange={set("task")} multiline optional />
+        <TextField
+          id={`${id}-task`}
+          label="Коротко о задаче"
+          value={values.task}
+          onChange={set("task")}
+          multiline
+          optional
+          maxLength={LIMITS.task}
+          error={errors.task}
+        />
       )}
       <Consent id={`${id}-consent`} checked={consent} onChange={setConsent} error={errors.consent} />
+      <FormError error={formError} />
       <button type="submit" className={`btn btn--primary ${s.submit}`} disabled={status === "sending"}>
         {status === "sending" ? "Отправляем…" : submitLabel}
       </button>

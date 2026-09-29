@@ -15,6 +15,29 @@ export function FieldError({ id, error }: { id: string; error?: string | null })
   );
 }
 
+/** Ошибка всей формы (лимит частоты, слишком быстрая отправка). */
+export function FormError({ error }: { error?: string | null }) {
+  if (!error) return null;
+  return (
+    <p className={s.error} role="alert">
+      {error}
+    </p>
+  );
+}
+
+/**
+ * Поле-ловушка для ботов: человек его не видит и не может попасть в него с клавиатуры,
+ * а бот, заполняющий все поля подряд, заполнит и его.
+ */
+export function Honeypot({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className={s.trap} aria-hidden="true">
+      <label htmlFor={id}>Оставьте это поле пустым</label>
+      <input id={id} name="website" type="text" tabIndex={-1} autoComplete="off" value={value} onChange={(e) => onChange(e.target.value)} />
+    </div>
+  );
+}
+
 /** Выбор канала связи: Telegram / WhatsApp / Звонок / E-mail. */
 export function ChannelPicker({
   name,
@@ -85,6 +108,7 @@ export function TextField({
   inputMode,
   multiline,
   optional,
+  maxLength,
 }: {
   id: string;
   label: string;
@@ -97,6 +121,7 @@ export function TextField({
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   multiline?: boolean;
   optional?: boolean;
+  maxLength?: number;
 }) {
   const errorId = `${id}-error`;
   const common = {
@@ -107,6 +132,8 @@ export function TextField({
     "aria-invalid": !!error || undefined,
     "aria-describedby": error ? errorId : undefined,
     required: !optional,
+    maxLength,
+    spellCheck: multiline ? undefined : false,
   };
   return (
     <div className={s.field}>

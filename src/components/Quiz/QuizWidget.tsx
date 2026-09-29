@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { quizQuestions, quizRange, UNKNOWN_TYPE, type QuizAnswers } from "@/config/quiz";
 import { formatPrice, site, type PlanId } from "@/config/site";
+import { LIMITS, sanitize, useFormGuard } from "@/lib/antispam";
 import { submitLead, validateContact, channels, type Channel } from "@/lib/leads";
-import { ChannelPicker, Consent, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
+import { ChannelPicker, Consent, FormError, Honeypot, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
 import f from "../forms/forms.module.css";
 import s from "./Quiz.module.css";
 
@@ -27,7 +28,10 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
   const [contact, setContact] = useState("");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string | null>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
+  const guard = useFormGuard();
+  const { restart } = guard;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const moved = useRef(false);
 
@@ -35,6 +39,11 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
   useEffect(() => {
     if (moved.current) headingRef.current?.focus({ preventScroll: true });
   }, [step]);
+
+  // Форма контакта появляется только на последнем шаге: время заполнения считаем с этого момента
+  useEffect(() => {
+    if (step === RESULT) restart();
+  }, [step, restart]);
 
   const go = (next: number) => {
     moved.current = true;
@@ -74,18 +83,36 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
       consent: consent ? null : "Нужно ваше согласие",
     };
     setErrors(next);
+    setFormError(null);
     if (Object.values(next).some(Boolean)) return;
+    const verdict = guard.check();
+    if (!verdict.ok) {
+      if (verdict.bot) setStatus("sent");
+      else setFormError(verdict.error);
+      return;
+    }
     setStatus("sending");
-    await submitLead({
-      source: "quiz",
-      contact,
-      channel,
-      answers: Object.fromEntries(
-        quizQuestions.map((q) => [q.title, (answers[q.id] ?? []).map((v) => q.options.find((o) => o.value === v)?.label)]),
-      ),
-      range,
-    });
-    setStatus("sent");
+    try {
+      await guard.run(() =>
+        submitLead({
+          source: "quiz",
+          contact: sanitize(contact, LIMITS.contact),
+          channel,
+          // Только значения из конфига: подменённые в DOM варианты ответа отбрасываются
+          answers: Object.fromEntries(
+            quizQuestions.map((q) => [
+              q.title,
+              (answers[q.id] ?? []).flatMap((v) => q.options.find((o) => o.value === v)?.label ?? []),
+            ]),
+          ),
+          range,
+        }),
+      );
+      setStatus("sent");
+    } catch {
+      setStatus("idle");
+      setFormError("Не получилось отправить заявку. Попробуйте ещё раз.");
+    }
   };
 
   const progress = step === RESULT ? 100 : (step / TOTAL) * 100;
@@ -141,7 +168,7 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
               <>
                 Примерная стоимость:{" "}
                 <span className={s.price}>
-                  от {formatPrice(range.min).replace(/ ₽$/, "")} до {range.max ? formatPrice(range.max) : "[Y] ₽"}
+                  от {formatPrice(range.min).replace(/ ₽$/, "")} до {formatPrice(range.max)}
                 </span>
               </>
             ) : (
@@ -149,12 +176,30 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
             )}
           </h3>
 
+          {range && (
+            <ul className={s.breakdown} aria-label="Из чего складывается цена">
+              {range.lines.map((line, i) => (
+                <li key={line.label}>
+                  <span>{line.label}</span>
+                  <span className={s.amount}>
+                    {line.percent !== undefined
+                      ? `+${line.percent}\u00A0%`
+                      : line.amount === 0
+                        ? "входит в тариф"
+                        : `${i === 0 ? "" : "+"}${formatPrice(line.amount!)}`}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {status === "sent" ? (
             <p className={f.success} role="status">
               {SUCCESS_MESSAGE}
             </p>
           ) : (
-            <form className={s.form} onSubmit={onSubmit} noValidate>
+            <form className={s.form} onSubmit={onSubmit} noValidate style={{ position: "relative" }}>
+              <Honeypot id={`${idPrefix}-website`} value={guard.trap} onChange={guard.setTrap} />
               <p className={s.lead}>
                 Точную цену рассчитаем в течение {site.responseMinutes} минут и зафиксируем в договоре. Куда прислать
                 расчёт?
@@ -169,9 +214,11 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
                 type={channel === "email" ? "email" : "text"}
                 inputMode={channel === "email" ? "email" : channel === "telegram" || !channel ? "text" : "tel"}
                 autoComplete={channel === "email" ? "email" : "tel"}
+                maxLength={LIMITS.contact}
                 error={errors.contact}
               />
               <Consent id={`${idPrefix}-consent`} checked={consent} onChange={setConsent} error={errors.consent} />
+              <FormError error={formError} />
               <div className={s.nav}>
                 <button type="button" className="btn btn--outline" onClick={onBack}>
                   Назад

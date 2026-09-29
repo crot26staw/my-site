@@ -196,3 +196,25 @@
   line-height: 1.6;
   color: var(--muted);
 }
+
+/* Расшифровка цены на шаге результата */
+.breakdown {
+  margin: -6px 0 22px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+}
+
+.breakdown li {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+  border-bottom: 1px dashed var(--line-strong);
+}
+
+.amount {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  color: var(--muted);
+}
