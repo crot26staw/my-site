@@ -54,7 +54,11 @@ export function onScrollLock(handler: (locked: boolean) => void): () => void {
   };
 }
 
+/** Счётчик: модалка может открыться поверх другой (заявка из кейса) — снимаем блокировку, когда закрыты все. */
+let locks = 0;
+
 export function lockScroll(locked: boolean): void {
-  document.documentElement.classList.toggle("scroll-locked", locked);
-  scrollLockHandler?.(locked);
+  locks = Math.max(0, locks + (locked ? 1 : -1));
+  document.documentElement.classList.toggle("scroll-locked", locks > 0);
+  scrollLockHandler?.(locks > 0);
 }

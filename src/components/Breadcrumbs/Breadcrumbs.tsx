@@ -10,8 +10,17 @@ export interface Crumb {
 
 const HOME: Crumb = { label: "Главная", href: "/" };
 
-/** Хлебные крошки отдельных страниц («Главная» добавляется сама) + разметка BreadcrumbList для поиска. */
-export function Breadcrumbs({ items }: { items: Crumb[] }) {
+/**
+ * Хлебные крошки отдельных страниц («Главная» добавляется сама) + разметка BreadcrumbList для поиска.
+ * renderLink — своя ссылка вместо перехода на страницу (в модалке кейса: звено страницы под модалкой закрывает её).
+ */
+export function Breadcrumbs({
+  items,
+  renderLink,
+}: {
+  items: Crumb[];
+  renderLink?: (crumb: Crumb, className: string) => React.ReactNode | undefined;
+}) {
   const trail = [HOME, ...items];
   const jsonLd = {
     "@context": "https://schema.org",
@@ -30,9 +39,11 @@ export function Breadcrumbs({ items }: { items: Crumb[] }) {
         {trail.map((crumb, i) => (
           <li key={crumb.href} className={s.item}>
             {i < trail.length - 1 ? (
-              <PageLink href={crumb.href} className={s.link}>
-                {crumb.label}
-              </PageLink>
+              (renderLink?.(crumb, s.link) ?? (
+                <PageLink href={crumb.href} className={s.link}>
+                  {crumb.label}
+                </PageLink>
+              ))
             ) : (
               <span aria-current="page">{crumb.label}</span>
             )}

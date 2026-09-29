@@ -6,13 +6,14 @@
   background: linear-gradient(180deg, rgba(4, 5, 10, 0.86), rgba(4, 5, 10, 0.62));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 43, 214, 0.18);
-  box-shadow: 0 1px 24px -8px rgba(255, 43, 214, 0.35);
+  border-bottom: 1px solid color-mix(in srgb, var(--neon-brand) 18%, transparent);
+  box-shadow: 0 1px 24px -8px color-mix(in srgb, var(--neon-brand) 35%, transparent);
 }
 
+/* Содержимое — ровно по краям блоков (Room): шириной --container, отступ --gutter только до края экрана */
 .inner {
   height: 100%;
-  max-width: var(--container);
+  max-width: calc(var(--container) + 2 * var(--gutter));
   margin: 0 auto;
   padding: 0 var(--gutter);
   display: flex;
@@ -31,8 +32,19 @@
   text-shadow: 0 0 12px rgba(0, 229, 255, 0.55);
   margin-right: auto;
   min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mark {
+  flex: none;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.55));
 }
 
 .nav {
@@ -150,7 +162,7 @@
     align-items: stretch;
     padding: 12px var(--gutter) 24px;
     background: rgba(4, 5, 10, 0.97);
-    border-bottom: 1px solid rgba(255, 43, 214, 0.25);
+    border-bottom: 1px solid color-mix(in srgb, var(--neon-brand) 25%, transparent);
     transform: translateY(-8px);
     opacity: 0;
     visibility: hidden;

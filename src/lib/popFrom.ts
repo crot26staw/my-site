@@ -9,7 +9,12 @@ const CLOSE_MS = 420;
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
 function keyframes(panel: HTMLElement, source: DOMRect): Keyframe[] {
-  const p = panel.getBoundingClientRect();
+  const rect = panel.getBoundingClientRect();
+  // Считаем от видимой на экране части панели: у высокой панели (кейс) центр далеко под экраном,
+  // и рост вокруг него дёргал бы верх панели вверх-вниз. У обычной модалки видна вся панель — ничего не меняется.
+  const top = Math.max(rect.top, 0);
+  const bottom = Math.min(rect.bottom, window.innerHeight);
+  const p = bottom > top ? { left: rect.left, width: rect.width, top, height: bottom - top } : rect;
   // Маленькое окно — примерно в ширину кнопки, по центру кнопки, но целиком на экране
   // (кнопка в шапке или у края — окно сдвигается внутрь).
   const small = clamp(source.width / p.width, 0.18, 0.35);
@@ -20,7 +25,7 @@ function keyframes(panel: HTMLElement, source: DOMRect): Keyframe[] {
   const dx = cx - (p.left + p.width / 2);
   const dy = cy - (p.top + p.height / 2);
 
-  panel.style.transformOrigin = "50% 50%";
+  panel.style.transformOrigin = `50% ${p.top - rect.top + p.height / 2}px`;
   return growKeyframes(dx, dy, small);
 }
 

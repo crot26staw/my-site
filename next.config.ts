@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "export",
   basePath,
+  // Для путей к файлам из public/ в <img> (src/lib/asset.ts) — Next сам их не дополняет
+  env: { NEXT_PUBLIC_BASE_PATH: basePath ?? "" },
   images: { unoptimized: true },
 };
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { asset } from "@/lib/asset";
 import s from "./Cases.module.css";
 
 /** Слайдер «до/после»: перетаскивание ползунка или стрелки на клавиатуре (range-input). */
@@ -30,7 +31,7 @@ function Shot({ src, label, className }: { src: string; label: string; className
   return (
     <div className={`${s.shot} ${className}`}>
       {isImage ? (
-        <img src={src} alt={label} loading="lazy" decoding="async" />
+        <img src={asset(src)} alt={label} loading="lazy" decoding="async" />
       ) : (
         <span className={s.placeholder}>{src}</span>
       )}

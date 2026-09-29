@@ -19,6 +19,33 @@
   display: grid;
 }
 
+/* Открыта сразу в HTML (прямой заход на кейс), пока не загрузился JS: обычный open выглядит как модалка.
+   Фон — у самого диалога вместо ::backdrop; после перевода в модальный режим ::backdrop появляется без анимации. */
+.dialog[data-preopen] {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(3, 4, 9, 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.dialog:has(.enter)::backdrop {
+  animation: none;
+}
+
+/* Появление при загрузке страницы: CSS, чтобы шло с первого кадра, ещё до JS */
+.enter {
+  animation: panel-enter 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.05s both;
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.985);
+  }
+}
+
 /* Панель летит из кнопки / в кнопку (src/lib/popFrom.ts) */
 .dialog[data-animating] {
   overflow: hidden;
@@ -53,6 +80,27 @@
 /* Для содержимого пошире — квиз */
 .wide {
   max-width: 760px;
+}
+
+/* Во всю ширину блоков сайта — как панель комнаты (Room): кейс */
+.full {
+  --pad: clamp(24px, 4vw, 56px);
+  max-width: var(--container);
+  /* Панель — элемент сетки диалога: без этого её раздвигает минимальная ширина содержимого на телефоне */
+  min-width: 0;
+  padding: var(--pad);
+}
+
+/* Высокая панель прокручивается — крестик остаётся на экране. Отступы: кнопка в углу панели,
+   как у обычной модалки, а содержимое под ней начинается с обычного отступа панели. */
+.full .close {
+  position: sticky;
+  top: 12px;
+  z-index: 2;
+  display: block;
+  margin: calc(10px - var(--pad)) calc(10px - var(--pad)) calc(var(--pad) - 50px) auto;
+  background: rgba(6, 8, 14, 0.85);
+  border: 1px solid color-mix(in srgb, var(--neon) 40%, transparent);
 }
 
 .close {
@@ -107,7 +155,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dialog::backdrop {
+  .dialog::backdrop,
+  .enter {
     animation: none;
   }
 }

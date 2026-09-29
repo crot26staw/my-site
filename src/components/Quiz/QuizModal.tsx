@@ -23,7 +23,7 @@ export function QuizModal() {
     <Modal
       trigger="quiz"
       labelledBy="quiz-modal-title"
-      wide
+      size="wide"
       panelStyle={roomStyle("quiz")}
       onTrigger={(link, open) => {
         if (open) return;
