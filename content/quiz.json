@@ -1,0 +1,201 @@
+{
+  "texts": {
+    "title": "Узнайте стоимость вашего сайта за 1 минуту",
+    "lead": "Ответьте на 5 вопросов, и мы покажем примерную стоимость. Точную цену рассчитаем лично и зафиксируем в договоре.",
+    "multipleHint": "Можно выбрать несколько",
+    "resultTitle": "Примерная стоимость:",
+    "noRangeTitle": "Подберём решение на бесплатной консультации",
+    "included": "входит в тариф",
+    "formLead": "Точную цену рассчитаем в течение {срок_ответа} минут и зафиксируем в договоре. Куда прислать расчёт?",
+    "channelLegend": "Куда прислать расчёт",
+    "contactLabel": "Контакт",
+    "submit": "Получить точный расчёт",
+    "fine": "Расчёт ни к чему не обязывает."
+  },
+  "questions": [
+    {
+      "id": "type",
+      "title": "Какой сайт вам нужен?",
+      "options": [
+        {
+          "value": "landing",
+          "label": "Лендинг (одна страница)"
+        },
+        {
+          "value": "corporate",
+          "label": "Корпоративный сайт"
+        },
+        {
+          "value": "catalog",
+          "label": "Сайт-каталог"
+        },
+        {
+          "value": "service",
+          "label": "Сайт для сервиса"
+        },
+        {
+          "value": "shop",
+          "label": "Интернет-магазин"
+        },
+        {
+          "value": "unknown",
+          "label": "Пока не знаю, нужна консультация"
+        }
+      ]
+    },
+    {
+      "id": "current",
+      "title": "Есть ли у вас сейчас сайт?",
+      "options": [
+        {
+          "value": "none",
+          "label": "Нет, делаем с нуля"
+        },
+        {
+          "value": "redesign",
+          "label": "Есть, нужен редизайн",
+          "short": "Редизайн"
+        },
+        {
+          "value": "migration",
+          "label": "Есть, нужен перенос на другую платформу",
+          "short": "Перенос сайта"
+        }
+      ]
+    },
+    {
+      "id": "design",
+      "title": "Какой дизайн вы хотите?",
+      "options": [
+        {
+          "value": "simple",
+          "label": "Простой и аккуратный"
+        },
+        {
+          "value": "custom",
+          "label": "Индивидуальный, под наш бренд",
+          "short": "Дизайн под бренд"
+        },
+        {
+          "value": "premium",
+          "label": "Премиальный, с анимацией и эффектами",
+          "short": "Премиальный дизайн"
+        }
+      ]
+    },
+    {
+      "id": "extras",
+      "title": "Что ещё нужно?",
+      "options": [
+        {
+          "value": "copywriting",
+          "label": "Продающие тексты",
+          "short": "Тексты"
+        },
+        {
+          "value": "seo",
+          "label": "SEO-оптимизация и семантическое ядро",
+          "short": "SEO и семантика"
+        },
+        {
+          "value": "crm",
+          "label": "Интеграция с CRM или 1С",
+          "short": "CRM или 1С"
+        },
+        {
+          "value": "payment",
+          "label": "Онлайн-оплата",
+          "short": "Онлайн-оплата"
+        },
+        {
+          "value": "custom",
+          "label": "Нестандартные функции (калькулятор, личный кабинет, запись)",
+          "short": "Нестандартные функции"
+        },
+        {
+          "value": "none",
+          "label": "Ничего из этого"
+        }
+      ]
+    },
+    {
+      "id": "deadline",
+      "title": "Когда нужен сайт?",
+      "options": [
+        {
+          "value": "asap",
+          "label": "Как можно быстрее",
+          "short": "Срочный запуск"
+        },
+        {
+          "value": "month",
+          "label": "В течение месяца"
+        },
+        {
+          "value": "relaxed",
+          "label": "Сроки не горят"
+        }
+      ]
+    }
+  ],
+  "pricing": {
+    "surcharges": {
+      "redesign": {
+        "landing": 5000,
+        "corporate": 10000,
+        "catalog": 15000,
+        "service": 15000,
+        "shop": 20000
+      },
+      "migration": {
+        "landing": 5000,
+        "corporate": 15000,
+        "catalog": 25000,
+        "service": 20000,
+        "shop": 35000
+      },
+      "copywriting": {
+        "landing": 0,
+        "corporate": 0,
+        "catalog": 15000,
+        "service": 0,
+        "shop": 20000
+      },
+      "seo": {
+        "landing": 10000,
+        "corporate": 0,
+        "catalog": 0,
+        "service": 0,
+        "shop": 0
+      },
+      "crm": {
+        "landing": 15000,
+        "corporate": 20000,
+        "catalog": 25000,
+        "service": 0,
+        "shop": 0
+      },
+      "payment": {
+        "landing": 10000,
+        "corporate": 12000,
+        "catalog": 15000,
+        "service": 15000,
+        "shop": 0
+      },
+      "customFeatures": {
+        "landing": 25000,
+        "corporate": 35000,
+        "catalog": 40000,
+        "service": 0,
+        "shop": 30000
+      }
+    },
+    "design": {
+      "simple": 1,
+      "custom": 1.1,
+      "premium": 1.4
+    },
+    "rush": 1.2,
+    "rangeSpread": 25
+  }
+}

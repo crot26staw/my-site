@@ -1,22 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { site } from "@/config/site";
+import { useSiteContent } from "../ContentProvider";
 import { LogoMark, TelegramIcon, WhatsAppIcon } from "../icons";
 import { PageLink, SectionLink, type SitePage } from "../PageLink";
 import s from "./Header.module.css";
 
-/** section — блок главной, page — отдельная страница. */
-const menu: { label: string; section?: string; page?: SitePage }[] = [
-  { page: "services", label: "Услуги" },
-  { page: "site-architecture", label: "Типы сайтов и цены" },
-  { page: "cases", label: "Кейсы" },
-  { page: "faq", label: "FAQ" },
-  { section: "contact", label: "Контакты" },
-];
-
 export function Header({ page = "home" }: { page?: SitePage }) {
+  const { site, layout } = useSiteContent();
   const onHome = page === "home";
+  /** section — блок главной, page — отдельная страница. */
+  const menu: { label: string; section?: string; page?: SitePage }[] = [
+    { page: "services", label: layout.menu.services },
+    { page: "sites", label: layout.menu.sites },
+    { page: "cases", label: layout.menu.cases },
+    { page: "faq", label: layout.menu.faq },
+    { section: "contact", label: layout.menu.contact },
+  ];
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function Header({ page = "home" }: { page?: SitePage }) {
             <WhatsAppIcon />
           </a>
           <a href="#contact" data-lead="new" className={`btn btn--primary btn--sm ${s.cta}`}>
-            Обсудить проект
+            {layout.cta}
           </a>
           <button
             type="button"

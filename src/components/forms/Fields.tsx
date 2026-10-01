@@ -1,10 +1,10 @@
 "use client";
 
-import { legal, site } from "@/config/site";
+import { asset } from "@/lib/asset";
 import { channels, type Channel } from "@/lib/leads";
+import { privacyPath } from "@/lib/paths";
+import { useSiteContent } from "../ContentProvider";
 import s from "./forms.module.css";
-
-export const SUCCESS_MESSAGE = `Спасибо! Мы свяжемся с вами в течение ${site.responseMinutes} минут в рабочее время.`;
 
 export function FieldError({ id, error }: { id: string; error?: string | null }) {
   if (!error) return null;
@@ -44,7 +44,7 @@ export function ChannelPicker({
   value,
   onChange,
   error,
-  legend = "Как с вами связаться",
+  legend,
 }: {
   name: string;
   value?: Channel;
@@ -52,10 +52,11 @@ export function ChannelPicker({
   error?: string | null;
   legend?: string;
 }) {
+  const { forms } = useSiteContent();
   const errorId = `${name}-error`;
   return (
     <fieldset className={s.fieldset} aria-describedby={error ? errorId : undefined}>
-      <legend className={s.label}>{legend}</legend>
+      <legend className={s.label}>{legend ?? forms.fields.channel}</legend>
       <div className={s.chips}>
         {channels.map((c) => (
           <label key={c.value} className={s.chip}>
@@ -71,6 +72,7 @@ export function ChannelPicker({
 
 /** Обязательное согласие на обработку персональных данных (152-ФЗ). */
 export function Consent({ id, checked, onChange, error }: { id: string; checked: boolean; onChange: (v: boolean) => void; error?: string | null }) {
+  const { forms } = useSiteContent();
   const errorId = `${id}-error`;
   return (
     <div className={s.consentWrap}>
@@ -85,9 +87,9 @@ export function Consent({ id, checked, onChange, error }: { id: string; checked:
           aria-describedby={error ? errorId : undefined}
         />
         <span>
-          Я согласен на обработку персональных данных в соответствии с{" "}
-          <a href={legal.privacyUrl} target="_blank" rel="noopener">
-            политикой конфиденциальности
+          {forms.consentText}{" "}
+          <a href={asset(privacyPath)} target="_blank" rel="noopener">
+            {forms.consentLink}
           </a>
         </span>
       </label>

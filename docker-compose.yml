@@ -1,0 +1,19 @@
+# PostgreSQL для локальной разработки: docker compose up -d
+# Порт 5433 — чтобы не конфликтовать с другим Postgres на машине. На сервере база ставится отдельно (DEPLOY.md).
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: web-lite-db
+    environment:
+      POSTGRES_USER: weblite
+      POSTGRES_PASSWORD: weblite_dev
+      POSTGRES_DB: weblite
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - web-lite-db:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  web-lite-db:
+    name: web-lite-db

@@ -1,5 +1,5 @@
-import { faq, homeFaq } from "@/config/faq";
-import { site } from "@/config/site";
+import { getContent } from "@/lib/server/content";
+import { faqJsonLd, JsonLd } from "@/lib/seo";
 import { TelegramIcon } from "../icons";
 import { PageLink } from "../PageLink";
 import { Room } from "../Room/Room";
@@ -7,37 +7,34 @@ import { FaqList } from "./FaqList";
 import s from "./Faq.module.css";
 
 /** Блок вопросов: на главной — первые из списка и ссылка на /faq, на странице /faq (page) — все. */
-export function Faq({ page = false }: { page?: boolean }) {
-  const items = page ? faq : homeFaq;
-  // Разметка FAQPage — только для вопросов, которые видны на этой странице.
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
-  };
+export async function Faq({ page = false }: { page?: boolean }) {
+  const { faq, blocks, pages, site } = await getContent();
+  const t = blocks.faq;
+  const items = page ? faq : faq.slice(0, t.homeCount);
 
   return (
     <Room
       id="faq"
       room="faq"
-      title="Частые вопросы"
-      {...(page ? { breadcrumbs: [{ label: "Частые вопросы", href: "/faq" }] } : { index: "10" })}
+      title={page ? pages.faq.title : t.title}
+      {...(page ? { breadcrumbs: [{ label: pages.faq.title, href: "/faq" }] } : { index: "10" })}
     >
       <FaqList items={items} />
 
       <div className={s.actions} data-reveal>
         {!page && (
           <PageLink href="/faq" className="btn btn--outline">
-            Все вопросы
+            {t.allButton}
           </PageLink>
         )}
         <a href={site.contacts.telegramUrl} target="_blank" rel="noopener" className="btn btn--outline">
           <TelegramIcon />
-          Не нашли ответ? Задайте вопрос
+          {t.askButton}
         </a>
       </div>
 
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {/* Разметка FAQPage — только на /faq: на главной те же вопросы, и две страницы с одной разметкой спорили бы в поиске */}
+      {page && <JsonLd data={faqJsonLd(items)} />}
     </Room>
   );
 }

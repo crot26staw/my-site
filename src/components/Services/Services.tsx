@@ -1,17 +1,15 @@
-import { servicePath, services, type Service } from "@/config/services";
+import type { Service } from "@/content/types";
+import { servicePath } from "@/lib/paths";
+import { getContent } from "@/lib/server/content";
 import { PageLink, SectionLink } from "../PageLink";
 import { Room } from "../Room/Room";
 import s from "./Services.module.css";
 
-export function Services() {
+export async function Services() {
+  const { services, blocks } = await getContent();
+  const t = blocks.services;
   return (
-    <Room
-      id="services"
-      room="services"
-      index="03"
-      title="Что мы делаем"
-      lead="Берём на себя весь цикл работы над сайтом: от идеи и дизайна до продвижения в поиске. Можно заказать проект под ключ или отдельную услугу."
-    >
+    <Room id="services" room="services" index="03" title={t.title} lead={t.lead}>
       <div className={s.grid}>
         {services.map((service, i) => (
           <article key={service.id} className={s.card} data-reveal data-press>
@@ -25,18 +23,18 @@ export function Services() {
             <ServiceItems service={service} />
             <div className={s.actions}>
               <ServiceCta service={service} onHome />
-              <ServiceMore service={service} />
+              <ServiceMore service={service} label={t.moreLabel} />
             </div>
           </article>
         ))}
 
-        <NicheCard />
+        <NicheCard title={t.nicheTitle} text={t.nicheText} cta={t.nicheCta} />
       </div>
 
       <p className={`cta-line ${s.allLine}`} data-reveal>
-        <span>Что входит в каждую услугу и сколько она стоит — на отдельной странице.</span>
+        <span>{t.allText}</span>
         <PageLink href="/services" className="btn btn--outline">
-          Все услуги
+          {t.allButton}
         </PageLink>
       </p>
     </Room>
@@ -82,26 +80,23 @@ export function ServiceCta({
 }
 
 /** Ссылка на страницу услуги /services/<id>. */
-export function ServiceMore({ service }: { service: Service }) {
+export function ServiceMore({ service, label }: { service: Service; label: string }) {
   return (
     <PageLink href={servicePath(service.id)} className={s.more}>
-      Подробнее <span aria-hidden="true">→</span>
+      {label} <span aria-hidden="true">→</span>
     </PageLink>
   );
 }
 
-function NicheCard() {
+function NicheCard({ title, text, cta }: { title: string; text: string; cta: string }) {
   return (
     <article className={`${s.card} ${s.wide}`} data-reveal data-press>
       <div className={s.wideText}>
-        <h3 className={s.title}>Нишевые функции под ваш бизнес</h3>
-        <p className={s.wideLead}>
-          Онлайн-запись, калькуляторы, личные кабинеты, интеграции с CRM и другие фичи, которые решают конкретные задачи
-          вашего бизнеса.
-        </p>
+        <h3 className={s.title}>{title}</h3>
+        <p className={s.wideLead}>{text}</p>
       </div>
       <a href="#contact" data-lead="new" className={`btn btn--primary ${s.cta}`}>
-        Обсудить задачу
+        {cta}
       </a>
     </article>
   );

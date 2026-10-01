@@ -1,26 +1,22 @@
-import { homeCases } from "@/config/cases";
+import { getContent } from "@/lib/server/content";
 import { PageLink } from "../PageLink";
 import { Room } from "../Room/Room";
 import { CaseGrid } from "./CaseCard";
 
-export function Cases() {
+export async function Cases() {
+  const { cases, blocks, pages } = await getContent();
+  const t = blocks.cases;
   return (
-    <Room
-      id="cases"
-      room="cases"
-      index="05"
-      title="Наши работы"
-      lead="Каждый проект начинается с задачи клиента. Показываем, с чем к нам пришли и что получилось в итоге."
-    >
-      <CaseGrid items={homeCases} />
+    <Room id="cases" room="cases" index="05" title={t.title} lead={t.lead}>
+      <CaseGrid items={cases.slice(0, t.homeCount)} labels={pages.cases} />
 
       <p className="cta-line" data-reveal>
-        <span>Хотите такой же результат? Расскажите о задаче, и мы покажем похожие проекты из вашей ниши.</span>
+        <span>{t.ctaText}</span>
         <PageLink href="/cases" className="btn btn--outline">
-          Все кейсы
+          {t.allButton}
         </PageLink>
         <a href="#contact" data-lead="new" className="btn btn--outline">
-          Обсудить проект
+          {t.discussButton}
         </a>
       </p>
     </Room>

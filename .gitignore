@@ -4,3 +4,9 @@ out
 next-env.d.ts
 *.tsbuildinfo
 .DS_Store
+
+# Локальные переменные окружения и данные сервера
+.env
+.env.*
+!.env.example
+/storage

@@ -1,0 +1,26 @@
+{
+  "name": "Web-Lite",
+  "url": "https://example.com",
+  "responseMinutes": 60,
+  "supportDays": 14,
+  "city": "[вашем городе]",
+  "contacts": {
+    "phone": "[Телефон]",
+    "phoneHref": "tel:+70000000000",
+    "telegram": "[@ник]",
+    "telegramUrl": "https://t.me/",
+    "whatsapp": "[номер]",
+    "whatsappUrl": "https://wa.me/",
+    "email": "[почта]",
+    "workHours": "[пн–пт, 10:00–19:00 МСК]"
+  },
+  "audit": {
+    "hours": "[24]",
+    "problems": "[5]"
+  },
+  "legal": {
+    "owner": "[ФИО]",
+    "inn": "[номер]",
+    "year": "[2026]"
+  }
+}

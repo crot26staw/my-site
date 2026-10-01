@@ -612,3 +612,18 @@ a {
     transform: scale(0.6);
   }
 }
+
+/* Страница 404 */
+.not-found {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+  max-width: 40rem;
+  margin: 0 auto;
+  padding: 8rem 1.25rem 4rem;
+}
+.not-found--global {
+  min-height: 100vh;
+  align-content: center;
+  padding-top: 2rem;
+}

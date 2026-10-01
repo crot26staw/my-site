@@ -1,16 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { quizQuestions, quizRange, UNKNOWN_TYPE, type QuizAnswers } from "@/config/quiz";
-import { formatPrice, site, type PlanId } from "@/config/site";
+import { submitLead } from "@/actions/leads";
+import { quizRange, UNKNOWN_TYPE, type QuizAnswers } from "@/config/quiz";
+import type { PlanId } from "@/content/types";
 import { LIMITS, sanitize, useFormGuard } from "@/lib/antispam";
-import { submitLead, validateContact, channels, type Channel } from "@/lib/leads";
-import { ChannelPicker, Consent, FormError, Honeypot, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
+import { formatPrice } from "@/lib/format";
+import { validateContact, channels, type Channel } from "@/lib/leads";
+import { useSiteContent } from "../ContentProvider";
+import { ChannelPicker, Consent, FormError, Honeypot, TextField } from "../forms/Fields";
 import f from "../forms/forms.module.css";
 import s from "./Quiz.module.css";
-
-const TOTAL = quizQuestions.length;
-const RESULT = TOTAL;
 
 interface QuizWidgetProps {
   /** Префикс id и имён полей: на главной два квиза (в блоке и в модалке), поля не должны пересекаться. */
@@ -22,6 +22,10 @@ interface QuizWidgetProps {
 }
 
 export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWidgetProps) {
+  const { quiz, forms } = useSiteContent();
+  const { questions: quizQuestions, texts } = quiz;
+  const TOTAL = quizQuestions.length;
+  const RESULT = TOTAL;
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswers>(initialPlan ? { type: [initialPlan] } : {});
   const [channel, setChannel] = useState<Channel>();
@@ -43,7 +47,7 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
   // Форма контакта появляется только на последнем шаге: время заполнения считаем с этого момента
   useEffect(() => {
     if (step === RESULT) restart();
-  }, [step, restart]);
+  }, [step, restart, RESULT]);
 
   const go = (next: number) => {
     moved.current = true;
@@ -73,7 +77,7 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
   };
   const onBack = () => go(step === RESULT && unknownType ? 0 : step - 1);
 
-  const range = quizRange(answers);
+  const range = quizRange(answers, quizQuestions, quiz.pricing, quiz.plans);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,26 +96,27 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
       return;
     }
     setStatus("sending");
+    let serverError = null as string | null;
     try {
-      await guard.run(() =>
-        submitLead({
+      await guard.run(async () => {
+        // Цену сервер считает сам по ответам: присланной браузером не доверяем
+        const result = await submitLead({
           source: "quiz",
           contact: sanitize(contact, LIMITS.contact),
           channel,
-          // Только значения из конфига: подменённые в DOM варианты ответа отбрасываются
-          answers: Object.fromEntries(
-            quizQuestions.map((q) => [
-              q.title,
-              (answers[q.id] ?? []).flatMap((v) => q.options.find((o) => o.value === v)?.label ?? []),
-            ]),
-          ),
-          range,
-        }),
-      );
+          answers,
+          website: guard.trap,
+          elapsedMs: guard.elapsed(),
+        });
+        if (!result.ok) {
+          serverError = result.error;
+          throw new Error(result.error);
+        }
+      });
       setStatus("sent");
     } catch {
       setStatus("idle");
-      setFormError("Не получилось отправить заявку. Попробуйте ещё раз.");
+      setFormError(serverError ?? forms.sendError);
     }
   };
 
@@ -133,7 +138,7 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
             <h3 id={`${idPrefix}-q-${question.id}`} ref={headingRef} tabIndex={-1} className={s.question}>
               {question.title}
             </h3>
-            {question.multiple && <p className={s.hint}>Можно выбрать несколько</p>}
+            {question.multiple && <p className={s.hint}>{texts.multipleHint}</p>}
             <div className={s.options}>
               {question.options.map((o) => (
                 <label key={o.value} className={s.option}>
@@ -166,13 +171,13 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
           <h3 ref={headingRef} tabIndex={-1} className={s.question}>
             {range ? (
               <>
-                Примерная стоимость:{" "}
+                {texts.resultTitle}{" "}
                 <span className={s.price}>
                   от {formatPrice(range.min).replace(/ ₽$/, "")} до {formatPrice(range.max)}
                 </span>
               </>
             ) : (
-              "Подберём решение на бесплатной консультации"
+              texts.noRangeTitle
             )}
           </h3>
 
@@ -185,7 +190,7 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
                     {line.percent !== undefined
                       ? `+${line.percent}\u00A0%`
                       : line.amount === 0
-                        ? "входит в тариф"
+                        ? texts.included
                         : `${i === 0 ? "" : "+"}${formatPrice(line.amount!)}`}
                   </span>
                 </li>
@@ -195,19 +200,16 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
 
           {status === "sent" ? (
             <p className={f.success} role="status">
-              {SUCCESS_MESSAGE}
+              {forms.success}
             </p>
           ) : (
             <form className={s.form} onSubmit={onSubmit} noValidate style={{ position: "relative" }}>
               <Honeypot id={`${idPrefix}-website`} value={guard.trap} onChange={guard.setTrap} />
-              <p className={s.lead}>
-                Точную цену рассчитаем в течение {site.responseMinutes} минут и зафиксируем в договоре. Куда прислать
-                расчёт?
-              </p>
-              <ChannelPicker name={`${idPrefix}-channel`} value={channel} onChange={setChannel} error={errors.channel} legend="Куда прислать расчёт" />
+              <p className={s.lead}>{texts.formLead}</p>
+              <ChannelPicker name={`${idPrefix}-channel`} value={channel} onChange={setChannel} error={errors.channel} legend={texts.channelLegend} />
               <TextField
                 id={`${idPrefix}-contact`}
-                label="Контакт"
+                label={texts.contactLabel}
                 value={contact}
                 onChange={setContact}
                 placeholder={placeholder}
@@ -224,10 +226,10 @@ export function QuizWidget({ idPrefix = "quiz", initialPlan, embedded }: QuizWid
                   Назад
                 </button>
                 <button type="submit" className="btn btn--primary" disabled={status === "sending"}>
-                  {status === "sending" ? "Отправляем…" : "Получить точный расчёт"}
+                  {status === "sending" ? "Отправляем…" : texts.submit}
                 </button>
               </div>
-              <p className={f.fine}>Расчёт ни к чему не обязывает.</p>
+              <p className={f.fine}>{texts.fine}</p>
             </form>
           )}
         </div>

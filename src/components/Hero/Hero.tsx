@@ -1,15 +1,10 @@
-import { plans, fromPrice } from "@/config/site";
 import { roomStyle } from "@/config/rooms";
+import { getContent } from "@/lib/server/content";
 import { ArrowDownIcon } from "../icons";
 import s from "./Hero.module.css";
 
-export function Hero() {
-  const landing = plans.landing;
-  const badges = [
-    `${landing.title} ${fromPrice(landing.price)} и ${landing.term}`,
-    "Сроки и цена фиксируются в договоре",
-    "Поэтапная оплата: платите за готовый этап",
-  ];
+export async function Hero() {
+  const t = (await getContent()).blocks.hero;
 
   return (
     <section
@@ -26,14 +21,11 @@ export function Hero() {
         <div className={s.content}>
           <p className="eyebrow" aria-hidden="true">// 00</p>
           <h1 id="hero-title" className={s.title}>
-            Сайты под ключ быстрее и&nbsp;дешевле. <span className={s.accent}>И&nbsp;мы честно объясняем, почему</span>
+            {t.title} <span className={s.accent}>{t.titleAccent}</span>
           </h1>
-          <p className={s.lead}>
-            AI берёт на себя рутину, а дизайн, стратегию и контроль качества мы оставляем людям. Поэтому вы платите за
-            результат, а не за часы работы.
-          </p>
+          <p className={s.lead}>{t.lead}</p>
           <ul className={s.badges}>
-            {badges.map((text) => (
+            {t.badges.map((text) => (
               <li key={text} className={s.badge}>
                 {text}
               </li>
@@ -41,18 +33,16 @@ export function Hero() {
           </ul>
           <div className={s.actions}>
             <a href="#quiz" data-quiz className="btn btn--primary">
-              Рассчитать стоимость
+              {t.primaryCta}
             </a>
             <a href="#why" className="btn btn--ghost">
-              Почему так выгодно?
+              {t.secondaryCta}
             </a>
           </div>
-          <p className={s.note}>
-            Расчёт в течение часа в удобном вам мессенджере. Ни к чему не обязывает.
-          </p>
+          <p className={s.note}>{t.note}</p>
         </div>
         <div className={s.hint} aria-hidden="true">
-          <span>Листайте</span>
+          <span>{t.scrollHint}</span>
           <ArrowDownIcon />
         </div>
       </div>

@@ -1,7 +1,8 @@
-import { site } from "@/config/site";
+import { getContent } from "@/lib/server/content";
 import { TelegramIcon } from "./icons";
 
-export function FloatingTelegram() {
+export async function FloatingTelegram() {
+  const { site } = await getContent();
   return (
     <a
       href={site.contacts.telegramUrl}

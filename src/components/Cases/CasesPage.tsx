@@ -1,4 +1,4 @@
-import { cases } from "@/config/cases";
+import { getContent } from "@/lib/server/content";
 import { FloatingTelegram } from "../FloatingTelegram";
 import { Footer } from "../Footer/Footer";
 import { Header } from "../Header/Header";
@@ -9,7 +9,9 @@ import s from "@/app/subpage.module.css";
 import { CaseGrid } from "./CaseCard";
 
 /** Страница всех кейсов. caseSlug — адрес кейса /cases/<slug>: тот же список, поверх открыт кейс. */
-export function CasesPage({ caseSlug }: { caseSlug?: string }) {
+export async function CasesPage({ caseSlug }: { caseSlug?: string }) {
+  const { cases, pages } = await getContent();
+  const t = pages.cases;
   return (
     <>
       <div className="scene scene--plain" aria-hidden="true" />
@@ -18,16 +20,17 @@ export function CasesPage({ caseSlug }: { caseSlug?: string }) {
         <Room
           id="cases"
           room="cases"
-          breadcrumbs={[{ label: "Кейсы", href: "/cases" }]}
-          title="Наши работы"
-          lead="Каждый проект начинается с задачи клиента. Показываем, с чем к нам пришли и что получилось в итоге."
+          breadcrumbs={[{ label: t.title, href: "/cases" }]}
+          underlay={!!caseSlug}
+          title={t.title}
+          lead={t.lead}
         >
-          <CaseGrid items={cases} />
+          <CaseGrid items={cases} labels={t} />
 
           <p className="cta-line" data-reveal>
-            <span>Хотите такой же результат? Расскажите о задаче, и мы покажем похожие проекты из вашей ниши.</span>
+            <span>{t.ctaText}</span>
             <a href="#contact" data-lead="new" className="btn btn--primary">
-              Обсудить проект
+              {t.discussButton}
             </a>
           </p>
         </Room>

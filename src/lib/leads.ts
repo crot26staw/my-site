@@ -1,6 +1,6 @@
 /** Заявки с квиза и форм. */
 
-import { LIMITS, checkText, sanitize } from "./antispam";
+import { LIMITS, checkText } from "./textGuard";
 
 export type Channel = "telegram" | "whatsapp" | "call" | "email";
 
@@ -69,30 +69,18 @@ export function validateUrl(value: string): string | null {
   }
 }
 
-export interface Lead {
-  source: "quiz" | "form-new" | "form-audit";
-  name?: string;
+/** Заявка, как её отправляет браузер. Сервер проверяет всё заново (src/actions/leads.ts). */
+export type LeadInput = {
+  /** Поле-ловушка для ботов: у человека пустое. */
+  website?: string;
+  /** Сколько миллисекунд заполняли форму. */
+  elapsedMs: number;
   contact: string;
   channel?: Channel;
-  [key: string]: unknown;
-}
+} & (
+  | { source: "form-new"; place: string; name: string; task?: string }
+  | { source: "form-audit"; place: string; name: string; url: string }
+  | { source: "quiz"; answers: Partial<Record<string, string[]>> }
+);
 
-/**
- * Отправка заявки.
- * TODO: [указать: Telegram-бот, e-mail, CRM] — сейчас заглушка, заявка только пишется в консоль.
- */
-export async function submitLead(lead: Lead): Promise<void> {
-  lead = cleanDeep(lead) as Lead;
-  console.info("[lead]", lead);
-  await new Promise((resolve) => setTimeout(resolve, 600));
-}
-
-/** Чистит все строки заявки (включая ответы квиза) перед отправкой. */
-function cleanDeep(value: unknown): unknown {
-  if (typeof value === "string") return sanitize(value, LIMITS.task, true);
-  if (Array.isArray(value)) return value.map(cleanDeep);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(Object.entries(value).map(([k, v]) => [sanitize(k, 200), cleanDeep(v)]));
-  }
-  return value;
-}
+export type LeadResult = { ok: true } | { ok: false; error: string };

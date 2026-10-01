@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { LIMITS, sanitize, useFormGuard } from "@/lib/antispam";
-import { submitLead, validateContact, validateName, validateTask, validateUrl, type Channel } from "@/lib/leads";
-import { ChannelPicker, Consent, FormError, Honeypot, SUCCESS_MESSAGE, TextField } from "../forms/Fields";
+import { submitLead } from "@/actions/leads";
+import { validateContact, validateName, validateTask, validateUrl, type Channel } from "@/lib/leads";
+import { useSiteContent } from "../ContentProvider";
+import { ChannelPicker, Consent, FormError, Honeypot, TextField } from "../forms/Fields";
 import f from "../forms/forms.module.css";
 import s from "./Contact.module.css";
 
@@ -17,8 +19,8 @@ interface LeadFormProps {
 }
 
 export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormProps) {
+  const { forms } = useSiteContent();
   const id = `${idPrefix}-${variant}`;
-  const source = `form-${variant}` as const;
   const [values, setValues] = useState({ url: "", name: "", contact: "", task: "" });
   const [channel, setChannel] = useState<Channel>();
   const [consent, setConsent] = useState(false);
@@ -54,30 +56,39 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
       return;
     }
     setStatus("sending");
+    const common = {
+      place: idPrefix === "form" ? "contact" : idPrefix,
+      name: sanitize(values.name, LIMITS.name),
+      contact: sanitize(values.contact, LIMITS.contact),
+      channel,
+      website: guard.trap,
+      elapsedMs: guard.elapsed(),
+    };
+    // Ошибка от сервера (лимит, проверка полей) — её текст; сбой сети — общее сообщение
+    let serverError = null as string | null;
     try {
-      await guard.run(() =>
-        submitLead({
-          source,
-          place: idPrefix === "form" ? "contact" : idPrefix,
-          name: sanitize(values.name, LIMITS.name),
-          contact: sanitize(values.contact, LIMITS.contact),
-          channel,
-          ...(variant === "audit"
-            ? { url: sanitize(values.url, LIMITS.url) }
-            : { task: sanitize(values.task, LIMITS.task, true) }),
-        }),
-      );
+      await guard.run(async () => {
+        const result = await submitLead(
+          variant === "audit"
+            ? { ...common, source: "form-audit", url: sanitize(values.url, LIMITS.url) }
+            : { ...common, source: "form-new", task: sanitize(values.task, LIMITS.task, true) },
+        );
+        if (!result.ok) {
+          serverError = result.error;
+          throw new Error(result.error);
+        }
+      });
       setStatus("sent");
     } catch {
       setStatus("idle");
-      setFormError("Не получилось отправить заявку. Попробуйте ещё раз.");
+      setFormError(serverError ?? forms.sendError);
     }
   };
 
   if (status === "sent") {
     return (
       <p className={f.success} role="status">
-        {SUCCESS_MESSAGE}
+        {forms.success}
       </p>
     );
   }
@@ -88,7 +99,7 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
       {variant === "audit" && (
         <TextField
           id={`${id}-url`}
-          label="Ссылка на сайт"
+          label={forms.fields.url}
           value={values.url}
           onChange={set("url")}
           placeholder="https://"
@@ -99,13 +110,13 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
           error={errors.url}
         />
       )}
-      <TextField id={`${id}-name`} label="Имя" value={values.name} onChange={set("name")} autoComplete="name" maxLength={LIMITS.name} error={errors.name} />
+      <TextField id={`${id}-name`} label={forms.fields.name} value={values.name} onChange={set("name")} autoComplete="name" maxLength={LIMITS.name} error={errors.name} />
       <TextField
         id={`${id}-contact`}
-        label="Телефон или ник в Telegram"
+        label={forms.fields.contact}
         value={values.contact}
         onChange={set("contact")}
-        placeholder="+7 или @ник"
+        placeholder={forms.fields.contactPlaceholder}
         autoComplete="tel"
         maxLength={LIMITS.contact}
         error={errors.contact}
@@ -114,7 +125,7 @@ export function LeadForm({ variant, submitLabel, idPrefix = "form" }: LeadFormPr
       {variant === "new" && (
         <TextField
           id={`${id}-task`}
-          label="Коротко о задаче"
+          label={forms.fields.task}
           value={values.task}
           onChange={set("task")}
           multiline

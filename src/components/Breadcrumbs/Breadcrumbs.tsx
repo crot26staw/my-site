@@ -1,4 +1,4 @@
-import { site } from "@/config/site";
+import { absoluteUrl, JsonLd } from "@/lib/seo";
 import { PageLink } from "../PageLink";
 import s from "./Breadcrumbs.module.css";
 
@@ -13,13 +13,19 @@ const HOME: Crumb = { label: "Главная", href: "/" };
 /**
  * Хлебные крошки отдельных страниц («Главная» добавляется сама) + разметка BreadcrumbList для поиска.
  * renderLink — своя ссылка вместо перехода на страницу (в модалке кейса: звено страницы под модалкой закрывает её).
+ * jsonLd: false — без разметки (страница, у которой своя главная цепочка: список кейсов под открытым кейсом).
  */
 export function Breadcrumbs({
   items,
   renderLink,
+  jsonLd: withJsonLd = true,
+  siteUrl,
 }: {
   items: Crumb[];
+  /** Адрес сайта для разметки: https://<домен>. */
+  siteUrl: string;
   renderLink?: (crumb: Crumb, className: string) => React.ReactNode | undefined;
+  jsonLd?: boolean;
 }) {
   const trail = [HOME, ...items];
   const jsonLd = {
@@ -29,7 +35,7 @@ export function Breadcrumbs({
       "@type": "ListItem",
       position: i + 1,
       name: crumb.label,
-      item: new URL(crumb.href, site.url).href,
+      item: absoluteUrl(siteUrl, crumb.href),
     })),
   };
 
@@ -50,7 +56,7 @@ export function Breadcrumbs({
           </li>
         ))}
       </ol>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {withJsonLd && <JsonLd data={jsonLd} />}
     </nav>
   );
 }

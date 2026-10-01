@@ -1,4 +1,6 @@
 import { roomStyle, type RoomId } from "@/config/rooms";
+import { getContent } from "@/lib/server/content";
+import { siteUrlOf } from "@/lib/seo";
 import { Breadcrumbs, type Crumb } from "../Breadcrumbs/Breadcrumbs";
 import s from "./Room.module.css";
 
@@ -13,18 +15,20 @@ type RoomProps = {
   hideFab?: boolean;
   children: React.ReactNode;
 } & (
-  | { /** Декоративный номер комнаты (блок на главной). */ index: string; breadcrumbs?: never }
+  | { /** Декоративный номер комнаты (блок на главной). */ index: string; breadcrumbs?: never; underlay?: never }
   | {
       /** Блок, который и есть вся страница: крошки вместо номера, заголовок — h1. */
       breadcrumbs: Crumb[];
       index?: never;
+      /** Страница под открытым кейсом (/cases/<slug>): h1 и разметка крошек — у кейса, здесь h2. */
+      underlay?: boolean;
     }
 );
 
 /** Блок-комната: контент на неоновой панели поверх 3D-стены. */
-export function Room({ id, room, index, breadcrumbs, title, lead, hideFab, children }: RoomProps) {
+export async function Room({ id, room, index, breadcrumbs, underlay, title, lead, hideFab, children }: RoomProps) {
   const titleId = `${id}-title`;
-  const Heading = breadcrumbs ? "h1" : "h2";
+  const Heading = breadcrumbs && !underlay ? "h1" : "h2";
   return (
     <section
       id={id}
@@ -38,7 +42,7 @@ export function Room({ id, room, index, breadcrumbs, title, lead, hideFab, child
     >
       <div className={s.panel}>
         {breadcrumbs ? (
-          <Breadcrumbs items={breadcrumbs} />
+          <Breadcrumbs items={breadcrumbs} jsonLd={!underlay} siteUrl={siteUrlOf((await getContent()).site)} />
         ) : (
           <p className="eyebrow" aria-hidden="true">
             // {index}

@@ -1,0 +1,46 @@
+{
+  "menu": {
+    "services": "Услуги",
+    "sites": "Типы сайтов и цены",
+    "cases": "Кейсы",
+    "faq": "FAQ",
+    "contact": "Контакты"
+  },
+  "cta": "Обсудить проект",
+  "footer": {
+    "about": "Сайты под ключ быстрее и дешевле. Разработка, дизайн и SEO с использованием AI-инструментов.",
+    "navTitle": "Навигация",
+    "servicesTitle": "Услуги",
+    "servicesLinks": [
+      {
+        "label": "Лендинги",
+        "href": "/sites/landing"
+      },
+      {
+        "label": "Корпоративные сайты",
+        "href": "/sites/corporate"
+      },
+      {
+        "label": "Каталоги и интернет-магазины",
+        "href": "/sites/shop"
+      },
+      {
+        "label": "Аудит и редизайн",
+        "href": "/services/improve"
+      },
+      {
+        "label": "Перенос на новую CMS",
+        "href": "/services/migration"
+      },
+      {
+        "label": "SEO-продвижение",
+        "href": "/services/seo"
+      }
+    ],
+    "contactsTitle": "Контакты",
+    "workHoursLabel": "Работаем:",
+    "selfEmployed": "{владелец}, самозанятый, ИНН {инн}",
+    "privacyLink": "Политика конфиденциальности",
+    "consentLink": "Согласие на обработку персональных данных"
+  }
+}
