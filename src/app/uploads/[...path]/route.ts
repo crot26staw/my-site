@@ -11,7 +11,7 @@ const PRESET = /^(preview|photo|screenshot|picture)$/;
 const MONTH = /^\d{4}-\d{2}$/;
 const FILE = /^[a-f0-9]{32}\.(webp|jpg)$/;
 
-export async function GET(_request: Request, ctx: RouteContext<"/uploads/[...path]">) {
+export async function GET(_request: Request, ctx: { params: Promise<{ path: string[] }> }) {
   const parts = (await ctx.params).path;
   if (parts.length !== 3 || !PRESET.test(parts[0]) || !MONTH.test(parts[1]) || !FILE.test(parts[2])) {
     return new Response("Not found", { status: 404 });
