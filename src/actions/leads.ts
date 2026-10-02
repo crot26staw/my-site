@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { quizQuestions, quizRange, type QuizAnswers } from "@/config/quiz";
 import type { QuizQuestionId } from "@/content/types";
 import { LIMITS, sanitize } from "@/lib/textGuard";
@@ -122,9 +123,10 @@ export async function submitLead(raw: LeadInput): Promise<LeadResult> {
     ],
   );
 
-  // Уведомление не должно ломать приём заявки: заявка уже в базе
-  notifyLead({ id: saved.id, source: lead.source, name: lead.name, contact, channel, url: lead.url, task: lead.task, priceMin: lead.priceMin, priceMax: lead.priceMax }).catch(
-    (err) => console.error("[leads] уведомление не отправлено:", (err as Error).message),
-  );
+  // Уведомления — после ответа посетителю и не ломают приём заявки: она уже в базе.
+  // Сначала письмо на почту из контактов сайта (текущего региона), затем Telegram.
+  const mailTo = (await getContent()).site.contacts.email;
+  const notice = { id: saved.id, source: lead.source, name: lead.name, contact, channel, url: lead.url, task: lead.task, answers: lead.answers, priceMin: lead.priceMin, priceMax: lead.priceMax };
+  after(() => notifyLead(notice, mailTo));
   return { ok: true };
 }

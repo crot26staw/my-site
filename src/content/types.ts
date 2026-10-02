@@ -10,7 +10,6 @@ export interface SiteSettings {
   responseMinutes: number;
   /** Бесплатная поддержка после запуска, дней. */
   supportDays: number;
-  city: string;
   contacts: {
     phone: string;
     phoneHref: string;
@@ -272,6 +271,8 @@ export interface Pages {
   };
   siteType: {
     seoTitle: string;
+    /** Пусто — description страницы = подзаголовок типа. */
+    seoDescription?: string;
     termPrefix: string;
     calcButton: string;
     purposeTitle: string;
@@ -310,9 +311,57 @@ export interface LegalDoc {
   sections: { title: string; text?: string[]; list?: string[] }[];
 }
 
+/** Город в трёх падежах — переменные {город_им}, {город_род}, {город}. */
+export interface City {
+  /** Именительный: «Казань». */
+  name: string;
+  /** Родительный: «Казани» — «из {город_род}». */
+  nameGen: string;
+  /** Предложный без предлога: «Казани» — «в {город}». */
+  namePrep: string;
+}
+
+interface SeoOverride {
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
+/** Мета-теги для поддоменов: у региона или общий шаблон для всех регионов. Пустое поле — уровнем ниже. */
+export interface RegionSeoTexts {
+  seo: {
+    home: SeoOverride;
+    services: SeoOverride;
+    sites: SeoOverride;
+    siteType: SeoOverride;
+    cases: SeoOverride & { caseSeoTitle?: string };
+    faq: SeoOverride;
+  };
+  services: { id: string; title?: string; description?: string }[];
+}
+
+/** Регион на поддомене: свой город и мета-теги. */
+export interface Region extends City, RegionSeoTexts {
+  /** Поддомен: kazan → kazan.<домен>. */
+  slug: string;
+}
+
+export interface RegionsContent {
+  main: City;
+  /** Мета-теги всех регионов (с {город}), если у региона не заполнено своё. */
+  template: RegionSeoTexts;
+  items: Region[];
+}
+
+/** Регион текущего запроса: slug — поддомен, null — основной домен. */
+export interface CurrentRegion extends City {
+  slug: string | null;
+}
+
 /** Весь контент сайта — то, что получают страницы. */
 export interface SiteContent {
+  /** site.url — адрес текущего региона: https://kazan.<домен> на поддомене. */
   site: SiteSettings;
+  region: CurrentRegion;
   team: TeamContent;
   siteTypes: SiteType[];
   services: Service[];

@@ -1,0 +1,19 @@
+{
+  "main": {
+    "name": "Краснодар",
+    "nameGen": "Краснодара",
+    "namePrep": "Краснодаре"
+  },
+  "template": {
+    "seo": {
+      "home": {},
+      "services": {},
+      "sites": {},
+      "siteType": {},
+      "cases": {},
+      "faq": {}
+    },
+    "services": []
+  },
+  "items": []
+}

@@ -25,6 +25,7 @@ import pagesSiteType from "../../content/pages.siteType.json";
 import pagesSites from "../../content/pages.sites.json";
 import privacy from "../../content/privacy.json";
 import quiz from "../../content/quiz.json";
+import regions from "../../content/regions.json";
 import services from "../../content/services.json";
 import site from "../../content/site.json";
 import siteTypes from "../../content/siteTypes.json";
@@ -56,6 +57,7 @@ export const DEFAULTS: Record<string, unknown> = {
   "pages.sites": pagesSites,
   "privacy": privacy,
   "quiz": quiz,
+  "regions": regions,
   "services": services,
   "site": site,
   "siteTypes": siteTypes,

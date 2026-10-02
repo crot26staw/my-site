@@ -5,6 +5,7 @@ import { useSiteContent } from "../ContentProvider";
 import { LogoMark, TelegramIcon, WhatsAppIcon } from "../icons";
 import { PageLink, SectionLink, type SitePage } from "../PageLink";
 import s from "./Header.module.css";
+import { RegionSwitcher } from "./RegionSwitcher";
 
 export function Header({ page = "home" }: { page?: SitePage }) {
   const { site, layout } = useSiteContent();
@@ -31,17 +32,20 @@ export function Header({ page = "home" }: { page?: SitePage }) {
   return (
     <header className={s.header}>
       <div className={s.inner}>
-        {onHome ? (
-          <a href="#top" className={s.logo} aria-label={`${site.name} — на главную`}>
-            <LogoMark className={s.mark} />
-            <span>{site.name}</span>
-          </a>
-        ) : (
-          <PageLink href="/" className={s.logo} aria-label={`${site.name} — на главную`}>
-            <LogoMark className={s.mark} />
-            <span>{site.name}</span>
-          </PageLink>
-        )}
+        <div className={s.brand}>
+          {onHome ? (
+            <a href="#top" className={s.logo} aria-label={`${site.name} — на главную`}>
+              <LogoMark className={s.mark} />
+              <span>{site.name}</span>
+            </a>
+          ) : (
+            <PageLink href="/" className={s.logo} aria-label={`${site.name} — на главную`}>
+              <LogoMark className={s.mark} />
+              <span>{site.name}</span>
+            </PageLink>
+          )}
+          <RegionSwitcher variant="header" />
+        </div>
 
         <nav id="main-nav" className={s.nav} data-open={open || undefined} aria-label="Основное меню">
           <ul className={s.menu}>
@@ -64,6 +68,7 @@ export function Header({ page = "home" }: { page?: SitePage }) {
               </li>
             ))}
           </ul>
+          <RegionSwitcher variant="drawer" />
           <a href={contacts.phoneHref} className={s.drawerPhone}>
             {contacts.phone}
           </a>

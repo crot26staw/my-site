@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Manrope, Unbounded } from "next/font/google";
 import { headers } from "next/headers";
+import { permanentRedirect } from "next/navigation";
 import { ContentProvider } from "@/components/ContentProvider";
 import { PageTransition } from "@/components/PageTransition";
 import { clientContentOf } from "@/lib/clientContent";
-import { getContent } from "@/lib/server/content";
+import { getContent, getRegionLinks, isUnknownHost } from "@/lib/server/content";
 import { pageMetadata, siteUrlOf } from "@/lib/seo";
 import { VIEW_MODE_SCRIPT } from "@/lib/viewModeScript";
 import "lenis/dist/lenis.css";
@@ -31,8 +32,11 @@ export const viewport: Viewport = {
 
 export default async function SiteLayout({ children }: { children: React.ReactNode }) {
   // Nonce для Content-Security-Policy ставит src/proxy.ts: без него браузер не выполнит инлайн-скрипт
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const requestHeaders = await headers();
+  const nonce = requestHeaders.get("x-nonce") ?? undefined;
   const content = await getContent();
+  // Поддомен не из списка регионов (опечатка, удалённый регион) — не дублируем сайт, уводим на основной домен
+  if (await isUnknownHost()) permanentRedirect(`${siteUrlOf(content.site)}${requestHeaders.get("x-pathname") ?? "/"}`);
   return (
     // suppressHydrationWarning: инлайн-скрипт ниже добавляет класс js и data-mode до гидратации
     <html lang="ru" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
@@ -41,7 +45,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: `document.documentElement.classList.add('js');${VIEW_MODE_SCRIPT}` }} />
       </head>
       <body id="top">
-        <ContentProvider value={clientContentOf(content)}>
+        <ContentProvider value={clientContentOf(content, await getRegionLinks())}>
           {children}
           <PageTransition />
         </ContentProvider>

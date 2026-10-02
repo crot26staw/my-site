@@ -3,7 +3,6 @@
   "url": "https://example.com",
   "responseMinutes": 60,
   "supportDays": 14,
-  "city": "[вашем городе]",
   "contacts": {
     "phone": "[Телефон]",
     "phoneHref": "tel:+70000000000",

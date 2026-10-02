@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return pageMetadata({
     site,
     title: fill(pages.siteType.seoTitle, pageVars(type.title, type.price)),
-    description: type.summary,
+    description: pages.siteType.seoDescription ? fill(pages.siteType.seoDescription, pageVars(type.title, type.price)) : type.summary,
     path: siteTypePath(type.id),
   });
 }
@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SiteTypePage({ params }: Props) {
   const type = await findType((await params).type);
   if (!type) notFound();
-  const { site, siteTypes, pages } = await getContent();
+  const { site, region, siteTypes, pages } = await getContent();
   const plans = plansOf(siteTypes);
   const plan = plans[type.id];
   const vars = pageVars(plan.title, plan.price);
@@ -135,6 +135,7 @@ export default async function SiteTypePage({ params }: Props) {
           <JsonLd
             data={serviceJsonLd({
               site,
+              region,
               name: `${plan.title} под ключ`,
               description: type.summary,
               path: siteTypePath(type.id),

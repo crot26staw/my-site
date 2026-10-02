@@ -58,7 +58,9 @@ export const VARIABLES: { name: string; description: string }[] = [
   { name: "дни_поддержки", description: "дней бесплатной поддержки" },
   { name: "аудит_часы", description: "за сколько часов делаем аудит" },
   { name: "аудит_проблемы", description: "сколько проблем находим в аудите" },
-  { name: "город", description: "город" },
+  { name: "город", description: "«Казани» — город региона, где: «в {город}»" },
+  { name: "город_им", description: "«Казань» — город региона, именительный падеж" },
+  { name: "город_род", description: "«Казани» — город региона, родительный падеж: «из {город_род}»" },
   { name: "телефон", description: "телефон" },
   { name: "email", description: "почта" },
   { name: "владелец", description: "ФИО владельца" },
@@ -100,6 +102,61 @@ const seo = (titleHint = "До 60 символов, в конце сайт са�
   seoDescription: area("Описание для поиска (description)", { max: 300, hint: "120–160 символов: что на странице и почему стоит зайти." }),
 });
 
+/** Мета-теги региона: пустое поле — текст основного домена. */
+const seoOverride = (titleHint?: string) => ({
+  seoTitle: text("Заголовок для поиска (title)", { max: 120, optional: true, hint: titleHint }),
+  seoDescription: area("Описание для поиска (description)", { max: 300, optional: true }),
+});
+
+const cityFields = {
+  name: text("Город", { max: 60, hint: "Именительный падеж: «Казань». Переменная {город_им}." }),
+  nameGen: text("Город — родительный падеж", { max: 60, hint: "«Казани» — для «из {город_род}». Переменная {город_род}." }),
+  namePrep: text("Город — предложный падеж", { max: 60, hint: "Без предлога: «Казани» — для «в {город}». Переменная {город}." }),
+};
+
+/** Мета-теги страниц и услуг для поддоменов: у региона и в общем шаблоне. */
+const regionSeoFields = (emptyHint: string) => ({
+  seo: obj(
+    {
+      home: obj(seoOverride("Полностью, вместе с названием: «… — {название}»."), { label: "Главная" }),
+      services: obj(seoOverride(), { label: "Страница «Услуги»" }),
+      sites: obj(seoOverride(), { label: "Страница «Типы сайтов»" }),
+      siteType: obj(
+        {
+          seoTitle: text("Заголовок для поиска", { max: 120, optional: true, hint: "Работают {тип} и {цена}." }),
+          seoDescription: area("Описание для поиска", {
+            max: 300,
+            optional: true,
+            hint: "Работают {тип} и {цена}. Пусто — подзаголовок типа сайта, как на основном домене.",
+          }),
+        },
+        { label: "Страница типа сайта" },
+      ),
+      cases: obj(
+        {
+          ...seoOverride(),
+          caseSeoTitle: text("Кейс — заголовок для поиска", { max: 120, optional: true, hint: "Работает {кейс}." }),
+        },
+        { label: "Страница «Кейсы»" },
+      ),
+      faq: obj(seoOverride(), { label: "Страница «Вопросы»" }),
+    },
+    { label: "Мета-теги страниц", hint: emptyHint },
+  ),
+  services: list(
+    "Мета-теги услуг",
+    obj({
+      id: text("Адрес услуги", { format: "slug", hint: "Как в разделе «Услуги»: seo — для страницы /services/seo." }),
+      title: text("Заголовок для поиска", { max: 90, optional: true }),
+      description: area("Описание для поиска", { max: 300, optional: true }),
+    }),
+    { max: 12, titleKey: "id", itemLabel: "услугу" },
+  ),
+});
+
+/** Поддомены, которые нельзя отдать региону. */
+const RESERVED_SUBDOMAINS = ["www", "mail", "api", "admin"];
+
 function uniqueBy(items: unknown, field: string, label: string, listPath = ""): ValidationError[] {
   if (!Array.isArray(items)) return [];
   const seen = new Map<string, number>();
@@ -126,7 +183,6 @@ export const SECTIONS: SectionDef[] = [
       url: text("Адрес сайта", { format: "url", hint: "Например https://web-lite.ru — для поиска и ссылок в мессенджерах." }),
       responseMinutes: num("Отвечаем на заявку за, минут", { min: 1, max: 1440, integer: true, hint: "Переменная {срок_ответа}." }),
       supportDays: num("Бесплатная поддержка, дней", { min: 0, max: 365, integer: true, hint: "Переменная {дни_поддержки}." }),
-      city: text("Город", { max: 60, hint: "В предложном падеже: «в Самаре». Переменная {город}." }),
       contacts: obj(
         {
           phone: text("Телефон — как показывать", { max: 40, placeholder: "+7 999 123-45-67" }),
@@ -156,6 +212,47 @@ export const SECTIONS: SectionDef[] = [
         { label: "Реквизиты" },
       ),
     }),
+  },
+  {
+    key: "regions",
+    title: "Регионы",
+    group: "main",
+    description:
+      "Поддомены для поиска по регионам: kazan.<домен>. Весь контент сайта общий — у региона свой город (переменные {город}, {город_им}, {город_род}) и мета-теги: свои, из общего шаблона или как на основном домене.",
+    schema: obj({
+      main: obj(cityFields, { label: "Основной домен" }),
+      template: obj(regionSeoFields("Пустое поле — как на основном домене."), {
+        label: "Шаблоны мета-тегов для всех регионов",
+        hint: "Нужны, только если на поддоменах тексты должны отличаться от основного домена: там уже есть {город}, и в каждом регионе подставится его город. Свои тексты региона — в его карточке ниже.",
+      }),
+      items: list(
+        "Регионы",
+        obj({
+          slug: text("Поддомен", {
+            format: "slug",
+            hint: "kazan → kazan.<домен>. Поддомен должен быть в DNS и сертификате (DEPLOY.md). Меняйте осторожно — старый адрес перестанет работать.",
+          }),
+          ...cityFields,
+          ...regionSeoFields("Пустое поле — из «Шаблонов для всех регионов», а если пусто и там — как на основном домене."),
+        }),
+        { max: 100, titleKey: "name", itemLabel: "регион" },
+      ),
+    }),
+    check: (data) => {
+      const { items, template } = (data ?? {}) as { items?: unknown; template?: { services?: unknown } };
+      const errors = uniqueBy(items, "slug", "Поддомен", "items");
+      errors.push(...uniqueBy(template?.services, "id", "Услуга", "template.services"));
+      if (Array.isArray(items)) {
+        items.forEach((r, i) => {
+          const region = r as { slug?: string; services?: unknown };
+          if (region.slug && RESERVED_SUBDOMAINS.includes(region.slug)) {
+            errors.push({ path: `items.${i}.slug`, message: `Поддомен «${region.slug}» занят под служебный` });
+          }
+          errors.push(...uniqueBy(region.services, "id", "Услуга", `items.${i}.services`));
+        });
+      }
+      return errors;
+    },
   },
   {
     key: "team",
@@ -668,6 +765,7 @@ export const SECTIONS: SectionDef[] = [
   }),
   page("pages.siteType", "Страница типа сайта", "Заголовки на страницах /sites/<тип>. Здесь работают ещё {тип} и {цена}.", {
     seoTitle: text("Заголовок для поиска", { max: 120, hint: "Например «Заказать {тип} под ключ {цена} — {название}»." }),
+    seoDescription: area("Описание для поиска", { max: 300, optional: true, hint: "Здесь работают {тип} и {цена}. Пусто — подзаголовок типа сайта." }),
     termPrefix: text("Перед сроком", { max: 20 }),
     calcButton: text("Кнопка калькулятора", { max: 40 }),
     purposeTitle: text("«Для чего нужен {тип}»", { max: 80 }),

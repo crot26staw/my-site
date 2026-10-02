@@ -30,11 +30,19 @@
   text-decoration: none;
   white-space: nowrap;
   text-shadow: 0 0 12px rgba(0, 229, 255, 0.55);
-  margin-right: auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* Логотип и выбор города — слева, остальное прижато вправо */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-right: auto;
+  min-width: 0;
 }
 
 .logo span {
@@ -45,6 +53,104 @@
 .mark {
   flex: none;
   filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.55));
+}
+
+/* Выбор города */
+.region {
+  position: relative;
+  flex: none;
+}
+
+.regionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.regionButton svg {
+  color: var(--neon-cyan);
+}
+
+.regionButton:hover,
+.region[data-open] .regionButton {
+  color: var(--text);
+  border-color: rgba(0, 229, 255, 0.45);
+  box-shadow: 0 0 14px -4px rgba(0, 229, 255, 0.5);
+}
+
+.regionChevron {
+  transition: transform 0.2s;
+}
+
+.region[data-open] .regionChevron {
+  transform: rotate(180deg);
+}
+
+.regionList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ссылки на все города есть в разметке всегда (их видят поисковики), список просто скрыт */
+.region .regionList {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 200px;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding: 6px;
+  background: rgba(4, 5, 10, 0.97);
+  border: 1px solid color-mix(in srgb, var(--neon-brand) 25%, transparent);
+  border-radius: 10px;
+  box-shadow: 0 12px 32px -12px rgba(0, 0, 0, 0.8), 0 0 24px -12px rgba(0, 229, 255, 0.4);
+  display: none;
+}
+
+.region[data-open] .regionList {
+  display: block;
+}
+
+.regionLink {
+  display: block;
+  padding: 9px 12px;
+  font-size: 14px;
+  color: var(--muted);
+  text-decoration: none;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.regionLink:hover {
+  color: var(--text);
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.regionLink[aria-current] {
+  color: var(--neon-cyan);
+}
+
+.drawerRegions {
+  display: none;
+}
+
+/* Меню во всю ширину, но экран ещё узкий — в кнопке только значок, город — в подсказке и списке */
+@media (min-width: 1200px) and (max-width: 1399px) {
+  .regionButton span {
+    display: none;
+  }
 }
 
 .nav {
@@ -62,6 +168,7 @@
 
 .link {
   display: block;
+  white-space: nowrap;
   padding: 8px 12px;
   font-size: 14px;
   color: var(--muted);
@@ -203,6 +310,47 @@
 @media (max-width: 767px) {
   .phone {
     display: none;
+  }
+
+  /* В шапке телефона места нет — выбор города в выпадающем меню */
+  .region {
+    display: none;
+  }
+
+  .drawerRegions {
+    display: block;
+    margin-top: 18px;
+  }
+
+  .drawerRegionsTitle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .drawerRegionsTitle svg {
+    color: var(--neon-cyan);
+  }
+
+  .drawerRegions .regionList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .drawerRegions .regionLink {
+    padding: 8px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    color: var(--text);
+  }
+
+  .drawerRegions .regionLink[aria-current] {
+    color: var(--neon-cyan);
+    border-color: rgba(0, 229, 255, 0.45);
   }
 
   .logo {

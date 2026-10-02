@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import type { SiteSettings } from "@/content/types";
+import type { CurrentRegion, SiteSettings } from "@/content/types";
 
 /** Адрес сайта без «/» в конце: https://<домен>. */
 export const siteUrlOf = (site: Pick<SiteSettings, "url">) => site.url.replace(/\/$/, "");
@@ -42,8 +42,12 @@ export function pageMetadata({
 /** Заголовок страницы с названием сайта в конце. */
 export const withName = (title: string, site: Pick<SiteSettings, "name">) => `${title} — ${site.name}`;
 
+/** География работы: город домена или поддомена; пока город не заполнен — вся Россия. */
+const areaServedOf = (region: CurrentRegion) =>
+  isFilled(region.name) ? { "@type": "City", name: region.name } : { "@type": "Country", name: "Россия" };
+
 /** Разметка главной: организация (контакты появятся, когда их заполнят в админке) и сам сайт. */
-export function organizationJsonLd(site: SiteSettings, description: string) {
+export function organizationJsonLd(site: SiteSettings, region: CurrentRegion, description: string) {
   const base = siteUrlOf(site);
   const { contacts } = site;
   const sameAs = [contacts.telegramUrl, contacts.whatsappUrl].filter(isFilled);
@@ -57,7 +61,7 @@ export function organizationJsonLd(site: SiteSettings, description: string) {
         name: site.name,
         url: absoluteUrl(base, "/"),
         description,
-        areaServed: { "@type": "Country", name: "Россия" },
+        areaServed: areaServedOf(region),
         ...(isFilled(contacts.phone) && { telephone: contacts.phone }),
         ...(isFilled(contacts.email) && { email: contacts.email }),
         ...(sameAs.length > 0 && { sameAs }),
@@ -77,12 +81,14 @@ export function organizationJsonLd(site: SiteSettings, description: string) {
 /** Разметка услуги или типа сайта: что продаём, кто делает и цена «от». */
 export function serviceJsonLd({
   site,
+  region,
   name,
   description,
   path,
   minPrice,
 }: {
   site: Pick<SiteSettings, "url">;
+  region: CurrentRegion;
   name: string;
   description: string;
   path: string;
@@ -97,7 +103,7 @@ export function serviceJsonLd({
     description,
     url: absoluteUrl(base, path),
     provider: { "@id": absoluteUrl(base, "/#organization") },
-    areaServed: { "@type": "Country", name: "Россия" },
+    areaServed: areaServedOf(region),
     ...(minPrice !== undefined && {
       offers: {
         "@type": "Offer",

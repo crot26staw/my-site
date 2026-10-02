@@ -37,7 +37,7 @@ const minPrice = (price: string) => (/^от\s[\d\s]+₽$/.test(price) ? Number(p
 export default async function ServicePage({ params }: Props) {
   const service = await findService((await params).id);
   if (!service) notFound();
-  const { site, services, siteTypes, pages } = await getContent();
+  const { site, region, services, siteTypes, pages } = await getContent();
   const t = pages.service;
 
   return (
@@ -143,6 +143,7 @@ export default async function ServicePage({ params }: Props) {
           <JsonLd
             data={serviceJsonLd({
               site,
+              region,
               name: service.title,
               description: service.seo.description,
               path: servicePath(service.id),

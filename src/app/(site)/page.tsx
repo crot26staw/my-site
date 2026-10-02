@@ -30,7 +30,7 @@ import { JsonLd, organizationJsonLd } from "@/lib/seo";
  * дверь справа (дугой) → прямо вниз. В конце выходим наружу и оборачиваемся к двери — футер там.
  */
 export default async function HomePage() {
-  const { site, pages } = await getContent();
+  const { site, region, pages } = await getContent();
   return (
     <>
       <SceneCanvas />
@@ -66,7 +66,7 @@ export default async function HomePage() {
       <FloatingTelegram />
       <Modals />
       <ScrollDirector />
-      <JsonLd data={organizationJsonLd(site, pages.home.seoDescription)} />
+      <JsonLd data={organizationJsonLd(site, region, pages.home.seoDescription)} />
     </>
   );
 }

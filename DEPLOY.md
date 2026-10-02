@@ -55,7 +55,8 @@ sudo chmod 600 .env
 | `TRUST_PROXY` | `1` — сайт за nginx, IP посетителя берётся из `X-Real-IP` |
 | `APP_SECRET` | `openssl rand -base64 32`. **Не меняйте после запуска**: от него зависят ключи 2FA |
 | `UPLOADS_DIR` | `/srv/web-lite/uploads` — загруженные картинки, вне папки с кодом |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | необязательно: уведомления о заявках |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | необязательно: письмо о заявке на почту из контактов сайта (уходит первым) |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | необязательно: уведомление о заявке в Telegram-группу (после письма) |
 
 ```bash
 sudo -u weblite mkdir -p /srv/web-lite/uploads
@@ -113,14 +114,22 @@ limit_req_zone $binary_remote_addr zone=wl_post:10m rate=10r/m;
 
 server {
     listen 80;
-    server_name example.com www.example.com;
+    # *.example.com — регионы на поддоменах (см. «Регионы» ниже)
+    server_name example.com *.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.example.com;
+    # ssl_certificate ... — тот же сертификат, что ниже
     return 301 https://example.com$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name example.com;
-    # ssl_certificate ... — допишет certbot
+    server_name example.com *.example.com;
+    # ssl_certificate ... — допишет certbot (или см. «Регионы»: сертификат на *.example.com)
 
     server_tokens off;
     client_max_body_size 16m;     # загрузка картинок до 15 МБ
@@ -176,6 +185,36 @@ sudo certbot --nginx -d example.com -d www.example.com
 ```
 
 После этого в админке, в разделе «Контакты и реквизиты», укажите адрес сайта `https://example.com`.
+
+### Регионы на поддоменах
+
+Сайт отвечает на `kazan.example.com`, `spb.example.com` и т.д. — список регионов в админке, раздел «Регионы».
+Контент везде общий, у региона свои город (переменные `{город}`, `{город_им}`, `{город_род}`) и мета-теги,
+свои canonical, `sitemap.xml` и `robots.txt`. Поддомен, которого нет в списке, перенаправляется на основной домен.
+
+1. **DNS:** запись `*.example.com` (A) на IP сервера.
+2. **Сертификат на `*.example.com`.** Let's Encrypt выдаёт wildcard только с проверкой через DNS,
+   поэтому нужен плагин certbot для вашего DNS-провайдера (тогда сертификат продлевается сам), например Cloudflare:
+
+   ```bash
+   sudo apt install -y python3-certbot-dns-cloudflare
+   # /root/.secrets/cloudflare.ini: dns_cloudflare_api_token = <токен с правом Zone:DNS:Edit>; chmod 600
+   sudo certbot certonly --dns-cloudflare --dns-cloudflare-credentials /root/.secrets/cloudflare.ini \
+     -d example.com -d '*.example.com'
+   ```
+
+   В обоих `server` с `listen 443` пропишите:
+
+   ```nginx
+   ssl_certificate     /etc/letsencrypt/live/example.com/fullchain.pem;
+   ssl_certificate_key /etc/letsencrypt/live/example.com/privkey.pem;
+   ```
+
+3. **Яндекс Вебмастер:** основному домену укажите регион «Краснодар» (город основного домена — в «Регионы» → «Основной домен»),
+   каждый поддомен добавьте как отдельный сайт и укажите ему его регион
+   («Представление в поиске» → «Региональность»). В Google Search Console достаточно ресурса «Доменный ресурс».
+
+Локально регион открывается на `http://kazan.localhost:3000`.
 
 ## 6. Резервные копии
 
